@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. DATABASE: POSTGRESQL
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: p2p_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: p2p_admin
+      POSTGRES_PASSWORD: secretpassword
+      # Mặc định tạo DB này trước, sau đó chạy init-db.sql để tạo các DB khác
+      POSTGRES_DB: default_db
+    ports:
+      - "5433:5432"
+    volumes:
+      # Map script sql vào thư mục khởi tạo của container
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      # Map data ra ngoài để không mất dữ liệu khi tắt Docker
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - p2p_network
+
+  # Giao diện quản lý Database trên Web (Port 5050)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: p2p_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@p2p.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - p2p_network
+
+  # ==========================================
+  # 2. MESSAGE BROKER: KAFKA & ZOOKEEPER
+  # ==========================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: p2p_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - p2p_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: p2p_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - p2p_network
+
+  # Giao diện quản lý Kafka trên Web (Port 8090)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: p2p_kafka_ui
+    ports:
+      - "8090:8080" # Tránh đụng port 8080 của API Gateway
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - p2p_network
+
+# ==========================================
+# KHAI BÁO NETWORK VÀ VOLUMES CHUNG
+# ==========================================
+networks:
+  p2p_network:
+    driver: bridge
+
+volumes:
+  pgdata:
