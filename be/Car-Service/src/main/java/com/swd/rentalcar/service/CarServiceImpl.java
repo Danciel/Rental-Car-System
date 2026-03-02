@@ -12,6 +12,7 @@ import com.swd.rentalcar.repository.CarRepository;
 import com.swd.rentalcar.repository.CarTypeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +22,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class CarServiceImpl implements CarService{
-    @Autowired
+
     private CarRepository carRepository;
-    @Autowired
     private CarModelRepository carModelRepository;
-    @Autowired
     private CarBrandRepository carBrandRepository;
-    @Autowired
     private CarTypeRepository carTypeRepository;
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -38,7 +37,7 @@ public class CarServiceImpl implements CarService{
     @Override
     public CarBrandResponse createCarBrand(CarBrandRequest request) {
         if (carBrandRepository.existsByName(request.getName())) {
-            throw new IllegalArgumentException("Brand name already exists: " + request.getName());
+            throw new IllegalArgumentException("Tên thương hiệu đã tồn tại: " + request.getName());
         }
         CarBrand brand = new CarBrand();
         brand.setName(request.getName());
@@ -87,7 +86,7 @@ public class CarServiceImpl implements CarService{
     @Override
     public CarTypeResponse createCarType(CarTypeRequest request) {
         if (carTypeRepository.existsByTypeName(request.getTypeName())) {
-            throw new IllegalArgumentException("Car type already exists: " + request.getTypeName());
+            throw new IllegalArgumentException("Loại xe đã tồn tại: " + request.getTypeName());
         }
         CarType carType = new CarType();
         carType.setTypeName(request.getTypeName());
@@ -186,7 +185,7 @@ public class CarServiceImpl implements CarService{
     @Transactional
     public CarResponse createCar(CarRequest request) {
         if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new IllegalArgumentException("License plate already exists: " + request.getLicensePlate());
+            throw new IllegalArgumentException("Biển số xe đã tồn tại: " + request.getLicensePlate());
         }
 
         CarModel carModel = findModelById(request.getCarModelId());
@@ -274,22 +273,22 @@ public class CarServiceImpl implements CarService{
 
     private CarBrand findBrandById(Long id) {
         return carBrandRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CarBrand not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy thương hiệu xe với mã: " + id));
     }
 
     private CarType findTypeById(Long id) {
         return carTypeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CarType not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy loại xe với mã: " + id));
     }
 
     private CarModel findModelById(Long id) {
         return carModelRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CarModel not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy mẫu xe với mã: " + id));
     }
 
     private Car findCarById(Long id) {
         return carRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Car not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy xe với mã: " + id));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -352,6 +351,8 @@ public class CarServiceImpl implements CarService{
         CarBrandResponse response = new CarBrandResponse();
         response.setId(carBrand.getId());
         response.setName(carBrand.getName());
+        response.setLogoUrl(carBrand.getLogoUrl());
+        response.setApprovalStatus(carBrand.getApprovalStatus());
         return response;
     }
 

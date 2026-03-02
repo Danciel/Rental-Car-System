@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.swd</groupId>
-	<artifactId>rentalcar</artifactId>
+	<artifactId>Car-Service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>rentalcar</name>
 	<description>Rental car</description>

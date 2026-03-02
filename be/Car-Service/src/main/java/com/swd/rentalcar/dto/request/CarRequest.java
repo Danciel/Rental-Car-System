@@ -15,17 +15,15 @@ import java.util.List;
 @NoArgsConstructor
 public class CarRequest {
 
-    @NotBlank(message = "License plate is required")
+    @NotBlank(message = "Biển số xe không được để trống")
     private String licensePlate;
 
-    @NotNull(message = "Base price per day is required")
+    @NotNull(message = "Giá thuê theo ngày không được để trống")
     private BigDecimal basePricePerDay;
 
     private BigDecimal depositAmount;
 
-    private CarStatus status;
-
-    @NotNull(message = "Car model ID is required")
+    @NotNull(message = "Mã mẫu xe không được để trống")
     private Long carModelId;
 
     private List<CarImageRequest> images;

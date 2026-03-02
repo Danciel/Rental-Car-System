@@ -36,9 +36,9 @@ public class CarModel {
     @Enumerated(EnumType.STRING)
     private FuelType fuelType;
 
-    @Column (nullable = false)
+    @Column
     private BigDecimal fuelCapacity;      // in liters (for combustion/hybrid)
-    @Column (nullable = false)
+    @Column
     private BigDecimal batteryCapacity;   // in kWh (for electric/hybrid)
 
     @Enumerated(EnumType.STRING)

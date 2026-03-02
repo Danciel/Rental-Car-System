@@ -11,9 +11,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class CarImageRequest {
-    @NotBlank(message = "Image URL is required")
+    @NotBlank(message = "Đường dẫn hình ảnh không được để trống")
     private String imageUrl;
 
-    @NotNull(message = "isThumbnail flag is required")
+    @NotNull(message = "Trường isThumbnail không được để trống")
     private Boolean isThumbnail;
 }

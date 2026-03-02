@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class CarTypeRequest {
-    @NotBlank(message = "Type name is required")
+    @NotBlank(message = "Tên loại xe không được để trống")
     private String typeName;
 
 }
