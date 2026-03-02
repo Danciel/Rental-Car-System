@@ -4,6 +4,7 @@ import com.swb.userservice.entities.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -12,8 +13,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
-    // Chỉ để test, phải cấu hình trong application.yml và env
-    private final String jwtSecret = "D385038A6A8104ECB277329E4D4A47E84B1E976690B7586BA01A1E574B2A88BD";
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     private final long jwtExpirationMs = 1800000; // 30 minutes
 
@@ -41,24 +42,5 @@ public class JwtTokenProvider {
 
     public long getExpirationMs() {
         return jwtExpirationMs;
-    }
-
-    public String getEmailFromJWT(String token) {
-        return Jwts.parser()
-                .verifyWith(key())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-    }
-
-    public boolean validateToken(String authToken) {
-        try {
-            Jwts.parser().verifyWith(key()).build().parseSignedClaims(authToken);
-            return true;
-        } catch (Exception ex) {
-            System.out.println("Token không hợp lệ: " + ex.getMessage());
-            return false;
-        }
     }
 }

@@ -11,4 +11,6 @@ public interface UserService {
     LoginResponse loginUser(LoginRequest request);
 
     UserProfileResponse getUserProfile(Long userId);
+
+    UserProfileResponse getMyProfile(String email);
 }

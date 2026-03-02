@@ -23,3 +23,7 @@ spring:
       ddl-auto: create # Test environment, use 'update' or 'validate' for production
   liquibase:
     enabled: false
+
+jwt:
+  # ${TÊN_BIẾN_ENV:Giá_trị_mặc_định_nếu_không_tìm_thấy}
+  secret: ${JWT_SECRET}
