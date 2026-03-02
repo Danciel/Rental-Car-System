@@ -17,6 +17,7 @@ import com.swb.userservice.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,6 +106,25 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Không tìm thấy người dùng."));
         return mapToResponse(user);
+    }
+
+    @Override
+    public UserProfileResponse getMyProfile(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin người dùng"));
+
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .walletBalance(user.getWalletBalance())
+                .status(user.getStatus().name())
+                .roles(user.getRoles().stream()
+                        .map(role -> role.getName().name())
+                        .collect(java.util.stream.Collectors.toSet()))
+                .isLicenseVerified(user.getIsLicenseVerified())
+                .build();
     }
 
     private UserProfileResponse mapToResponse(User user) {

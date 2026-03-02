@@ -41,8 +41,12 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> getMyProfile() {
-        return ResponseEntity.ok("Lấy thông tin thành công");
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getMyProfile(
+            @RequestHeader("X-User-Email") String email) {
+
+        UserProfileResponse myProfile = userService.getMyProfile(email);
+
+        return ResponseEntity.ok(ApiResponse.success(myProfile, "Lấy thông tin cá nhân thành công"));
     }
 
     @GetMapping("/{id}")

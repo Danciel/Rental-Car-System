@@ -10,6 +10,10 @@ spring:
         locator:
           enabled: true
 
+jwt:
+  # ${TÊN_BIẾN_ENV:Giá_trị_mặc_định_nếu_không_tìm_thấy}
+  secret: ${JWT_SECRET:Y2h1b2lfYmlfbWF0X3NpZXVfY2FwX2N1YV9oZV90aG9uZ19taWNyb3NlcnZpY2VzX3AycA==}
+
 logging:
   level:
     org.springframework.cloud.gateway: TRACE
