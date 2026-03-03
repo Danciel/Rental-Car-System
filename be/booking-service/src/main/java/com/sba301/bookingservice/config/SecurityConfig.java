@@ -40,7 +40,9 @@ public class SecurityConfig {
             // running on localhost can call the booking API.
             .allowedOriginPatterns("*")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowCredentials(true);
+            .allowedHeaders("*")
+            .allowCredentials(false)
+            .maxAge(3600);
       }
     };
   }
