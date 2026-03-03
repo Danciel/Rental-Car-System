@@ -1,5 +1,5 @@
 import { Star, Settings, Users } from 'lucide-react';
-import type { Car } from '@/app/data/cars';
+import { Car } from '@/app/data/cars';
 
 interface CarCardProps {
   car: Car;
