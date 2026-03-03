@@ -1,5 +1,6 @@
 package com.swd.rentalcar.config;
 
+import com.swd.rentalcar.client.UserServiceClient;
 import com.swd.rentalcar.entity.*;
 import com.swd.rentalcar.entity.enums.ApprovalStatus;
 import com.swd.rentalcar.entity.enums.CarStatus;
@@ -24,6 +25,7 @@ public class DataSeeder implements CommandLineRunner {
     private final CarTypeRepository carTypeRepository;
     private final CarModelRepository carModelRepository;
     private final CarRepository carRepository;
+    private final UserServiceClient userServiceClient;
 
     @Override
     public void run(String... args) {
@@ -31,6 +33,17 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Database already seeded, skipping...");
             return;
         }
+
+        // ── ADD THIS BLOCK ────────────────────────────────────────────────────────
+        Long ownerId = userServiceClient.getOwnerIdByLogin("owner@gmail.com","123456");
+
+        if (ownerId == null) {
+            log.warn("Owner not found in user-service — make sure user-service is running and seeded first.");
+            return;
+        }
+        log.info("Found owner with id: {}", ownerId);
+        // ─────────────────────────────────────────────────────────────────────────
+
 
         log.info("Seeding database...");
 
@@ -95,14 +108,16 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Seeded {} car models", 8);
 
         // ── CARS ──────────────────────────────────────────────────────────────
-        Car car1 = car("51A-12345", new BigDecimal("800000"),  new BigDecimal("5000000"),  CarStatus.AVAILABLE, camry);
-        Car car2 = car("51B-67890", new BigDecimal("700000"),  new BigDecimal("4000000"),  CarStatus.AVAILABLE, corolla);
-        Car car3 = car("51C-11111", new BigDecimal("950000"),  new BigDecimal("6000000"),  CarStatus.AVAILABLE, rav4);
-        Car car4 = car("51D-22222", new BigDecimal("650000"),  new BigDecimal("3500000"),  CarStatus.AVAILABLE, civic);
-        Car car5 = car("51E-33333", new BigDecimal("850000"),  new BigDecimal("5500000"),  CarStatus.STOPPED,   crv);
-        Car car6 = car("51F-44444", new BigDecimal("1100000"), new BigDecimal("7000000"),  CarStatus.AVAILABLE, f150);
-        Car car7 = car("51G-55555", new BigDecimal("1200000"), new BigDecimal("8000000"),  CarStatus.AVAILABLE, modelY);
-        Car car8 = car("51H-66666", new BigDecimal("1050000"), new BigDecimal("7500000"),  CarStatus.BANNED,    model3);
+
+        // After — add ownerId as last argument to all 8
+        Car car1 = car("51A-12345", new BigDecimal("800000"), new BigDecimal("5000000"), CarStatus.AVAILABLE, camry,   ownerId);
+        Car car2 = car("51B-67890", new BigDecimal("700000"), new BigDecimal("4000000"), CarStatus.AVAILABLE, corolla, ownerId);
+        Car car3 = car("51C-11111", new BigDecimal("950000"), new BigDecimal("6000000"), CarStatus.AVAILABLE, rav4,    ownerId);
+        Car car4 = car("51D-22222", new BigDecimal("650000"), new BigDecimal("3500000"), CarStatus.AVAILABLE, civic,   ownerId);
+        Car car5 = car("51E-33333", new BigDecimal("850000"), new BigDecimal("5500000"), CarStatus.STOPPED,   crv,     ownerId);
+        Car car6 = car("51F-44444", new BigDecimal("1100000"),new BigDecimal("7000000"), CarStatus.AVAILABLE, f150,    ownerId);
+        Car car7 = car("51G-55555", new BigDecimal("1200000"),new BigDecimal("8000000"), CarStatus.AVAILABLE, modelY,  ownerId);
+        Car car8 = car("51H-66666", new BigDecimal("1050000"),new BigDecimal("7500000"), CarStatus.BANNED,    model3,  ownerId);
 
         // Add images to cars
         addImage(car1, "https://cdn.motor1.com/images/mgl/nAGrzB/s3/2023-toyota-camry.jpg",         true);
@@ -173,7 +188,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private Car car(String licensePlate, BigDecimal basePricePerDay,
-                    BigDecimal depositAmount, CarStatus status, CarModel carModel) {
+                    BigDecimal depositAmount, CarStatus status, CarModel carModel, Long ownerId) {
         Car c = new Car();
         c.setLicensePlate(licensePlate);
         c.setBasePricePerDay(basePricePerDay);
@@ -181,6 +196,7 @@ public class DataSeeder implements CommandLineRunner {
         c.setStatus(status);
         c.setCarModel(carModel);
         c.setImages(new HashSet<>());
+        c.setOwnerId(ownerId);
         return c;
     }
 
