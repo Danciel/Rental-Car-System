@@ -17,7 +17,7 @@ public class UserServiceClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${service.user.url}")
+    @Value("http://localhost:8081")
     private String userServiceUrl;
 
     public boolean existsById(Long id) {
