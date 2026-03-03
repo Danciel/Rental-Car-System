@@ -3,6 +3,7 @@ import { SearchBar } from '@/app/components/search-bar';
 import { FilterSidebar, FilterState } from '@/app/components/filter-sidebar';
 import { CarCard } from '@/app/components/car-card';
 import { cars } from '@/app/data/cars';
+import { bookCarAndPay, toLocalDateTimeString } from '@/app/api/booking';
 
 export function SearchPage() {
   const [searchLocation, setSearchLocation] = useState('');
@@ -25,10 +26,47 @@ export function SearchPage() {
     setFilters(newFilters);
   };
 
-  const handleBookCar = (carId: number) => {
+  const handleBookCar = async (carId: number) => {
     const car = cars.find(c => c.id === carId);
-    if (car) {
-      alert(`Booking ${car.name}! This would navigate to the booking page.`);
+    if (!car) {
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      alert('Please select start and end dates before booking.');
+      return;
+    }
+
+    const startTime = toLocalDateTimeString(startDate);
+    const endTime = toLocalDateTimeString(endDate);
+
+    if (!startTime || !endTime) {
+      alert('Invalid dates selected.');
+      return;
+    }
+
+    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+    const daysRaw = (endDate.getTime() - startDate.getTime()) / millisecondsPerDay;
+    const rentalDays = Math.max(1, Math.ceil(daysRaw));
+    const rentalPrice = car.pricePerDay * rentalDays;
+    const depositAmount = Math.max(100, car.pricePerDay);
+
+    try {
+      const response = await bookCarAndPay({
+        userId: 1, // TODO: replace with real logged-in user id
+        carId,
+        startTime,
+        endTime,
+        rentalPrice,
+        depositAmount,
+        paymentMethod: 'CREDIT_CARD',
+        preInspectionNote: `Booking from web UI for ${searchLocation || 'unknown location'}`,
+      });
+
+      alert(`Booking confirmed! Code: ${response.bookingCode}`);
+    } catch (error) {
+      console.error(error);
+      alert('Booking failed. Please try again.');
     }
   };
 

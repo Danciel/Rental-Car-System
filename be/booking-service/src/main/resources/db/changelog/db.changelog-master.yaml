@@ -1,0 +1,225 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-booking-schema
+      author: booking-service
+      changes:
+        - createTable:
+            tableName: bookings
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: car_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_price
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deposit_amount
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: rental_contracts
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: contract_number
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rental_price
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deposit_amount
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: rental_contracts
+            baseColumnNames: booking_id
+            constraintName: fk_rental_contract_booking
+            referencedTableName: bookings
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: car_inspect_reports
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: car_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pre_inspection_note
+                  type: VARCHAR(1000)
+              - column:
+                  name: post_inspection_note
+                  type: VARCHAR(1000)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: car_inspect_reports
+            baseColumnNames: booking_id
+            constraintName: fk_car_inspect_booking
+            referencedTableName: bookings
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: payment_transactions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deposit_amount
+                  type: NUMERIC(18,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_method
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_transaction_id
+                  type: VARCHAR(100)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: payment_transactions
+            baseColumnNames: booking_id
+            constraintName: fk_payment_booking
+            referencedTableName: bookings
+            referencedColumnNames: id
+            onDelete: CASCADE
+
