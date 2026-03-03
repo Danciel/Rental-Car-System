@@ -16,11 +16,20 @@ public class GatewayRoutingConfig {
                         .path("/api/users/**")
                         .uri("http://localhost:8081"))
 
-                // TODO:
-                //  Car Service
-                // .route("car-service", r -> r
-                //         .path("/api/cars/**")
-                //         .uri("http://localhost:8082"))
+                // Car Service
+                 .route("car-service", r -> r
+                         .path("/api/cars/**")
+                         .uri("http://localhost:8082"))
+
+                // Booking Service
+                .route("booking-service", r -> r
+                        .path("/api/bookings/**")
+                        .uri("http://localhost:8083"))
+
+                // Payment Service
+                .route("payment-service", r -> r
+                        .path("/api/payments/**")
+                        .uri("http://localhost:8084"))
 
                 .build();
     }
