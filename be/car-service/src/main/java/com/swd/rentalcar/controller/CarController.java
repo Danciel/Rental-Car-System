@@ -11,6 +11,7 @@ import com.swd.rentalcar.dto.response.CarTypeResponse;
 import com.swd.rentalcar.entity.enums.ApprovalStatus;
 import com.swd.rentalcar.entity.enums.CarStatus;
 import com.swd.rentalcar.service.CarService;
+import com.swb.common.dtos.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,39 +32,45 @@ public class CarController {
     // ═════════════════════════════════════════════════════════════════════════
 
     @PostMapping("/brands")
-    public ResponseEntity<CarBrandResponse> createCarBrand(
+    public ResponseEntity<ApiResponse<CarBrandResponse>> createCarBrand(
             @Valid @RequestBody CarBrandRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carService.createCarBrand(request));
+        CarBrandResponse data = carService.createCarBrand(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(data, "Tạo thương hiệu xe thành công"));
     }
 
     @GetMapping("/brands/{id}")
-    public ResponseEntity<CarBrandResponse> getCarBrandById(@PathVariable Long id) {
-        return ResponseEntity.ok(carService.getCarBrandById(id));
+    public ResponseEntity<ApiResponse<CarBrandResponse>> getCarBrandById(@PathVariable Long id) {
+        CarBrandResponse data = carService.getCarBrandById(id);
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy thông tin thương hiệu xe thành công"));
     }
 
     @GetMapping("/brands")
-    public ResponseEntity<List<CarBrandResponse>> getAllCarBrands() {
-        return ResponseEntity.ok(carService.getAllCarBrands());
+    public ResponseEntity<ApiResponse<List<CarBrandResponse>>> getAllCarBrands() {
+        List<CarBrandResponse> data = carService.getAllCarBrands();
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy danh sách thương hiệu xe thành công"));
     }
 
     @PutMapping("/brands/{id}")
-    public ResponseEntity<CarBrandResponse> updateCarBrand(
+    public ResponseEntity<ApiResponse<CarBrandResponse>> updateCarBrand(
             @PathVariable Long id,
             @Valid @RequestBody CarBrandRequest request) {
-        return ResponseEntity.ok(carService.updateCarBrand(id, request));
+        CarBrandResponse data = carService.updateCarBrand(id, request);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật thương hiệu xe thành công"));
     }
 
     @PatchMapping("/brands/{id}/status")
-    public ResponseEntity<CarBrandResponse> updateCarBrandApprovalStatus(
+    public ResponseEntity<ApiResponse<CarBrandResponse>> updateCarBrandApprovalStatus(
             @PathVariable Long id,
             @RequestParam ApprovalStatus status) {
-        return ResponseEntity.ok(carService.updateCarBrandApprovalStatus(id, status));
+        CarBrandResponse data = carService.updateCarBrandApprovalStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật trạng thái thương hiệu xe thành công"));
     }
 
     @DeleteMapping("/brands/{id}")
-    public ResponseEntity<Void> deleteCarBrand(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCarBrand(@PathVariable Long id) {
         carService.deleteCarBrand(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa thương hiệu xe thành công"));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -71,32 +78,37 @@ public class CarController {
     // ═════════════════════════════════════════════════════════════════════════
 
     @PostMapping("/types")
-    public ResponseEntity<CarTypeResponse> createCarType(
+    public ResponseEntity<ApiResponse<CarTypeResponse>> createCarType(
             @Valid @RequestBody CarTypeRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carService.createCarType(request));
+        CarTypeResponse data = carService.createCarType(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(data, "Tạo loại xe thành công"));
     }
 
     @GetMapping("/types/{id}")
-    public ResponseEntity<CarTypeResponse> getCarTypeById(@PathVariable Long id) {
-        return ResponseEntity.ok(carService.getCarTypeById(id));
+    public ResponseEntity<ApiResponse<CarTypeResponse>> getCarTypeById(@PathVariable Long id) {
+        CarTypeResponse data = carService.getCarTypeById(id);
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy thông tin loại xe thành công"));
     }
 
     @GetMapping("/types")
-    public ResponseEntity<List<CarTypeResponse>> getAllCarTypes() {
-        return ResponseEntity.ok(carService.getAllCarTypes());
+    public ResponseEntity<ApiResponse<List<CarTypeResponse>>> getAllCarTypes() {
+        List<CarTypeResponse> data = carService.getAllCarTypes();
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy danh sách loại xe thành công"));
     }
 
     @PutMapping("/types/{id}")
-    public ResponseEntity<CarTypeResponse> updateCarType(
+    public ResponseEntity<ApiResponse<CarTypeResponse>> updateCarType(
             @PathVariable Long id,
             @Valid @RequestBody CarTypeRequest request) {
-        return ResponseEntity.ok(carService.updateCarType(id, request));
+        CarTypeResponse data = carService.updateCarType(id, request);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật loại xe thành công"));
     }
 
     @DeleteMapping("/types/{id}")
-    public ResponseEntity<Void> deleteCarType(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCarType(@PathVariable Long id) {
         carService.deleteCarType(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa loại xe thành công"));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -104,44 +116,52 @@ public class CarController {
     // ═════════════════════════════════════════════════════════════════════════
 
     @PostMapping("/models")
-    public ResponseEntity<CarModelResponse> createCarModel(
+    public ResponseEntity<ApiResponse<CarModelResponse>> createCarModel(
             @Valid @RequestBody CarModelRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carService.createCarModel(request));
+        CarModelResponse data = carService.createCarModel(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(data, "Tạo mẫu xe thành công"));
     }
 
     @GetMapping("/models/{id}")
-    public ResponseEntity<CarModelResponse> getCarModelById(@PathVariable Long id) {
-        return ResponseEntity.ok(carService.getCarModelById(id));
+    public ResponseEntity<ApiResponse<CarModelResponse>> getCarModelById(@PathVariable Long id) {
+        CarModelResponse data = carService.getCarModelById(id);
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy thông tin mẫu xe thành công"));
     }
 
     @GetMapping("/models")
-    public ResponseEntity<List<CarModelResponse>> getAllCarModels() {
-        return ResponseEntity.ok(carService.getAllCarModels());
+    public ResponseEntity<ApiResponse<List<CarModelResponse>>> getAllCarModels() {
+        List<CarModelResponse> data = carService.getAllCarModels();
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy danh sách mẫu xe thành công"));
     }
 
     @GetMapping("/brands/{brandId}/models")
-    public ResponseEntity<List<CarModelResponse>> getCarModelsByBrand(@PathVariable Long brandId) {
-        return ResponseEntity.ok(carService.getCarModelsByBrand(brandId));
+    public ResponseEntity<ApiResponse<List<CarModelResponse>>> getCarModelsByBrand(
+            @PathVariable Long brandId) {
+        List<CarModelResponse> data = carService.getCarModelsByBrand(brandId);
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy danh sách mẫu xe theo thương hiệu thành công"));
     }
 
     @PutMapping("/models/{id}")
-    public ResponseEntity<CarModelResponse> updateCarModel(
+    public ResponseEntity<ApiResponse<CarModelResponse>> updateCarModel(
             @PathVariable Long id,
             @Valid @RequestBody CarModelRequest request) {
-        return ResponseEntity.ok(carService.updateCarModel(id, request));
+        CarModelResponse data = carService.updateCarModel(id, request);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật mẫu xe thành công"));
     }
 
     @PatchMapping("/models/{id}/status")
-    public ResponseEntity<CarModelResponse> updateCarModelApprovalStatus(
+    public ResponseEntity<ApiResponse<CarModelResponse>> updateCarModelApprovalStatus(
             @PathVariable Long id,
             @RequestParam ApprovalStatus status) {
-        return ResponseEntity.ok(carService.updateCarModelApprovalStatus(id, status));
+        CarModelResponse data = carService.updateCarModelApprovalStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật trạng thái mẫu xe thành công"));
     }
 
     @DeleteMapping("/models/{id}")
-    public ResponseEntity<Void> deleteCarModel(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCarModel(@PathVariable Long id) {
         carService.deleteCarModel(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa mẫu xe thành công"));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -149,56 +169,71 @@ public class CarController {
     // ═════════════════════════════════════════════════════════════════════════
 
     @PostMapping
-    public ResponseEntity<CarResponse> createCar(
+    public ResponseEntity<ApiResponse<CarResponse>> createCar(
             @Valid @RequestBody CarRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carService.createCar(request));
+        CarResponse data = carService.createCar(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(data, "Tạo xe thành công"));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CarResponse> getCarById(@PathVariable Long id) {
-        return ResponseEntity.ok(carService.getCarById(id));
+    public ResponseEntity<ApiResponse<CarResponse>> getCarById(@PathVariable Long id) {
+        CarResponse data = carService.getCarById(id);
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy thông tin xe thành công"));
     }
 
-    //TODO: Later
-//    @GetMapping("licenseplate/{licensePlate}")
-//    public ResponseEntity<CarResponse> getCarByLicensePlate(@PathVariable String licensePlate) {
-//        return ResponseEntity.ok(carService.getCarByLicensePlate(licensePlate));
-//    }
-
     @GetMapping
-    public ResponseEntity<List<CarResponse>> getAllCars(
+    public ResponseEntity<ApiResponse<List<CarResponse>>> getAllCars(
             @RequestParam(required = false) CarStatus status,
             @RequestParam(required = false) Long modelId,
             @RequestParam(required = false) Long brandId) {
+        List<CarResponse> data;
+        String message;
+
         if (status != null) {
-            return ResponseEntity.ok(carService.getCarsByStatus(status));
+            data = carService.getCarsByStatus(status);
+            message = "Lấy danh sách xe theo trạng thái thành công";
+        } else if (modelId != null) {
+            data = carService.getCarsByModel(modelId);
+            message = "Lấy danh sách xe theo mẫu xe thành công";
+        } else if (brandId != null) {
+            data = carService.getCarsByBrand(brandId);
+            message = "Lấy danh sách xe theo thương hiệu thành công";
+        } else {
+            data = carService.getAllCars();
+            message = "Lấy danh sách xe thành công";
         }
-        if (modelId != null) {
-            return ResponseEntity.ok(carService.getCarsByModel(modelId));
-        }
-        if (brandId != null) {
-            return ResponseEntity.ok(carService.getCarsByBrand(brandId));
-        }
-        return ResponseEntity.ok(carService.getAllCars());
+
+        return ResponseEntity.ok(ApiResponse.success(data, message));
     }
 
+    //TODO: Later
+//    @GetMapping("/licenseplate/{licensePlate}")
+//    public ResponseEntity<ApiResponse<CarResponse>> getCarByLicensePlate(
+//            @PathVariable String licensePlate) {
+//        CarResponse data = carService.getCarByLicensePlate(licensePlate);
+//        return ResponseEntity.ok(ApiResponse.success(data, "Lấy thông tin xe theo biển số thành công"));
+//    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<CarResponse> updateCar(
+    public ResponseEntity<ApiResponse<CarResponse>> updateCar(
             @PathVariable Long id,
             @Valid @RequestBody CarRequest request) {
-        return ResponseEntity.ok(carService.updateCar(id, request));
+        CarResponse data = carService.updateCar(id, request);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật xe thành công"));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<CarResponse> updateCarStatus(
+    public ResponseEntity<ApiResponse<CarResponse>> updateCarStatus(
             @PathVariable Long id,
             @RequestParam CarStatus status) {
-        return ResponseEntity.ok(carService.updateCarStatus(id, status));
+        CarResponse data = carService.updateCarStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.success(data, "Cập nhật trạng thái xe thành công"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCar(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCar(@PathVariable Long id) {
         carService.deleteCar(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa xe thành công"));
     }
 }
