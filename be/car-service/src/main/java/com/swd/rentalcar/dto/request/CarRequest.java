@@ -27,4 +27,6 @@ public class CarRequest {
     private Long carModelId;
 
     private List<CarImageRequest> images;
+
+    private Long ownerId;
 }

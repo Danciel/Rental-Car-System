@@ -49,6 +49,9 @@ public class Car {
         carImage.setCar(null);
     }
 
+    @Column(nullable = false)
+    private Long ownerId;
+
     //TODO: add ownerId when we have user entity
     //private Long ownerId;
 

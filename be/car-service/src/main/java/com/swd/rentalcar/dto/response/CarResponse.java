@@ -19,4 +19,5 @@ public class CarResponse {
     private CarStatus status;
     private CarModelResponse carModelId;
     private List<CarImageResponse> images;
+    private Long ownerId;
 }

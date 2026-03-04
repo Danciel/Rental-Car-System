@@ -1,5 +1,6 @@
 package com.swd.rentalcar.service;
 
+import com.swd.rentalcar.client.UserServiceClient;
 import com.swd.rentalcar.dto.request.*;
 import com.swd.rentalcar.dto.response.*;
 import com.swd.rentalcar.entity.*;
@@ -13,7 +14,6 @@ import com.swd.rentalcar.repository.CarTypeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +29,7 @@ public class CarServiceImpl implements CarService{
     private CarModelRepository carModelRepository;
     private CarBrandRepository carBrandRepository;
     private CarTypeRepository carTypeRepository;
+    private UserServiceClient userServiceClient;
 
     // ═════════════════════════════════════════════════════════════════════════
     // CAR BRAND
@@ -190,6 +191,10 @@ public class CarServiceImpl implements CarService{
 
         CarModel carModel = findModelById(request.getCarModelId());
 
+        if (!userServiceClient.existsById(request.getOwnerId())) {
+            throw new EntityNotFoundException("Không tìm thấy chủ xe");
+        }
+
         Car car = new Car();
         car.setLicensePlate(request.getLicensePlate());
         car.setBasePricePerDay(request.getBasePricePerDay());
@@ -197,6 +202,7 @@ public class CarServiceImpl implements CarService{
         car.setStatus(CarStatus.AVAILABLE);
         car.setCarModel(carModel);
         car.setImages(new HashSet<>());
+        car.setOwnerId(request.getOwnerId());
 
         if (request.getImages() != null) {
             request.getImages().forEach(imgRequest ->
@@ -209,6 +215,14 @@ public class CarServiceImpl implements CarService{
     @Override
     public CarResponse getCarById(Long id) {
         return toResponse(findCarById(id));
+    }
+
+    @Override
+    public CarResponse getCarByLicensePlate(String licensePlate) {
+        Car car = carRepository.findByLicensePlate(licensePlate)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy xe với biển số: " + licensePlate));
+        return toResponse(car);
     }
 
     @Override
@@ -241,10 +255,15 @@ public class CarServiceImpl implements CarService{
         Car car = findCarById(id);
         CarModel carModel = findModelById(request.getCarModelId());
 
+        if (!userServiceClient.existsById(request.getOwnerId())) {
+            throw new EntityNotFoundException("Không tìm thấy chủ xe");
+        }
+
         car.setLicensePlate(request.getLicensePlate());
         car.setBasePricePerDay(request.getBasePricePerDay());
         car.setDepositAmount(request.getDepositAmount());
         car.setCarModel(carModel);
+        car.setOwnerId(request.getOwnerId());
 
         if (request.getImages() != null) {
             car.getImages().clear();
@@ -343,7 +362,7 @@ public class CarServiceImpl implements CarService{
         response.setStatus(car.getStatus());
         response.setCarModelId(toResponse(car.getCarModel()));
         response.setImages(car.getImages().stream().map(this::toResponse).toList());
-
+        response.setOwnerId(car.getOwnerId());
         return response;
     }
 
