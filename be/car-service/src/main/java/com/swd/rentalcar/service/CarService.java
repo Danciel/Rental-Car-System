@@ -64,6 +64,9 @@ public interface CarService {
 
     CarResponse getCarById(Long id);
 
+    //Todo: add later
+    //CarResponse getCarByLicensePlate(String licensePlate);
+
     List<CarResponse> getAllCars();
 
     List<CarResponse> getCarsByStatus(CarStatus status);

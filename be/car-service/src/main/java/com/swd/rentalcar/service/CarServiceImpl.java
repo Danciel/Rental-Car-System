@@ -217,13 +217,14 @@ public class CarServiceImpl implements CarService{
         return toResponse(findCarById(id));
     }
 
-    @Override
-    public CarResponse getCarByLicensePlate(String licensePlate) {
-        Car car = carRepository.findByLicensePlate(licensePlate)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy xe với biển số: " + licensePlate));
-        return toResponse(car);
-    }
+    //TODO: Add Later
+//    @Override
+//    public CarResponse getCarByLicensePlate(String licensePlate) {
+//        Car car = carRepository.findByLicensePlate(licensePlate)
+//                .orElseThrow(() -> new EntityNotFoundException(
+//                        "Không tìm thấy xe với biển số: " + licensePlate));
+//        return toResponse(car);
+//    }
 
     @Override
     public List<CarResponse> getAllCars() {
