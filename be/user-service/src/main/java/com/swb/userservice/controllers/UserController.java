@@ -5,6 +5,8 @@ import com.swb.userservice.dtos.LoginRequest;
 import com.swb.userservice.dtos.LoginResponse;
 import com.swb.userservice.dtos.RegisterRequest;
 import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.request.UpdateLicenseRequest;
+import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +49,24 @@ public class UserController {
         UserProfileResponse myProfile = userService.getMyProfile(email);
 
         return ResponseEntity.ok(ApiResponse.success(myProfile, "Lấy thông tin cá nhân thành công"));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateMyProfile(
+            @RequestHeader("X-User-Email") String email,
+            @Valid @RequestBody UpdateProfileRequest request) {
+
+        UserProfileResponse updatedProfile = userService.updateMyProfile(email, request);
+        return ResponseEntity.ok(ApiResponse.success(updatedProfile, "Cập nhật thông tin thành công"));
+    }
+
+    @PutMapping("/me/license")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> submitDriverLicense(
+            @RequestHeader("X-User-Email") String email,
+            @Valid @RequestBody UpdateLicenseRequest request) {
+
+        UserProfileResponse updatedProfile = userService.submitDriverLicense(email, request);
+        return ResponseEntity.ok(ApiResponse.success(updatedProfile, "Đã nộp bằng lái xe, vui lòng chờ duyệt"));
     }
 
     @GetMapping("/{id}")

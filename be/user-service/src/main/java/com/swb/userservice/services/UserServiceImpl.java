@@ -3,6 +3,9 @@ package com.swb.userservice.services;
 import com.swb.common.exception.AppException;
 import com.swb.userservice.dtos.LoginRequest;
 import com.swb.userservice.dtos.LoginResponse;
+import com.swb.userservice.dtos.request.UpdateLicenseRequest;
+import com.swb.userservice.dtos.request.UpdateProfileRequest;
+import com.swb.userservice.entities.DriverLicense;
 import com.swb.userservice.entities.Role;
 import com.swb.userservice.entities.User;
 import com.swb.userservice.dtos.RegisterRequest;
@@ -118,6 +121,9 @@ public class UserServiceImpl implements UserService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .phoneNumber(user.getPhoneNumber())
+                .dateOfBirth(user.getDateOfBirth())
+                .avatarUrl(user.getAvatarUrl())
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
                 .roles(user.getRoles().stream()
@@ -125,6 +131,58 @@ public class UserServiceImpl implements UserService {
                         .collect(java.util.stream.Collectors.toSet()))
                 .isLicenseVerified(user.getIsLicenseVerified())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateMyProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        user.setFullName(request.getFullName());
+        if (request.getPhone() != null) {
+            user.setPhoneNumber(request.getPhone());
+        }
+
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+
+        userRepository.save(user);
+
+        return getMyProfile(email);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse submitDriverLicense(String email, UpdateLicenseRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        // 1. Tạo hoặc cập nhật thông tin Bằng lái
+        DriverLicense license = user.getDriverLicense();
+        if (license == null) {
+            license = new DriverLicense();
+            license.setUser(user);
+        }
+
+        license.setLicenseNumber(request.getLicenseNumber());
+        license.setImageFrontUrl(request.getFrontImageUrl());
+        license.setImageBackUrl(request.getBackImageUrl());
+
+        // Test only
+        // TODO: Admin sẽ xem ảnh và nhập thủ công, có thể có AI OCR đọc thẳng và tự động điền và admin xác nhận lại
+        license.setLicenseClass("B1");
+        license.setExpiryDate(java.time.LocalDate.now().plusYears(5));
+
+        user.setDriverLicense(license);
+
+        // 2. Chuyển trạng thái xác minh KYC sang Chờ Duyệt
+        user.setKycStatus(com.swb.userservice.enums.KYCStatus.PENDING);
+
+        userRepository.save(user);
+
+        return getMyProfile(email);
     }
 
     private UserProfileResponse mapToResponse(User user) {
@@ -140,6 +198,7 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
+                .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
