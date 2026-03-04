@@ -29,6 +29,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         boolean isPublicPath = path.contains("/login") ||
                 path.contains("/register") ||
+                // VNPAY/MOMO gọi về ko cần Token
+                path.contains("/api/payments/callback") ||
                 // Cho phép bất kỳ ai xem danh sách xe bằng lệnh GET
                 (path.startsWith("/api/cars") && method.equals("GET")) ||
                 (path.startsWith("/api/car-brands") && method.equals("GET")) ||
