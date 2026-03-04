@@ -58,8 +58,15 @@ export interface BookCarResponse {
 
 // ── API WRAPPER ───────────────────────────────────────────────────────────────
 
-async function get<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+async function get<T>(url: string, withAuth: boolean = false): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  if (withAuth) {
+    const token = localStorage.getItem("ACCESS_TOKEN");
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { headers });
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || "Request failed");
   return json.data as T;
@@ -102,4 +109,34 @@ export const carApi = {
 export const bookingApi = {
   bookAndPay: (request: BookCarRequest, email: string) =>
     post<BookCarResponse>(`${BOOKING_SERVICE_URL}/bookings/book-and-pay`, request, email),
+
+  getHistory: () =>
+    get<BookingHistoryItemResponse[]>(`${BOOKING_SERVICE_URL}/bookings/history`, true),
+
+  getById: (id: number) =>
+    get<BookingDetailResponse>(`${BOOKING_SERVICE_URL}/bookings/${id}`, true),
 };
+
+export interface BookingHistoryItemResponse {
+  id: number;
+  bookingCode: string;
+  carId: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  totalPrice: number;
+  depositAmount: number;
+}
+
+export interface BookingDetailResponse {
+  id: number;
+  bookingCode: string;
+  carId: number;
+  userId: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  totalPrice: number;
+  depositAmount: number;
+  createdAt: string;
+}

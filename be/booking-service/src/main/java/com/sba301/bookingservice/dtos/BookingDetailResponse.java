@@ -1,0 +1,24 @@
+package com.sba301.bookingservice.dtos;
+
+import com.sba301.bookingservice.entities.BookingStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import lombok.Builder;
+import lombok.Value;
+
+@Value
+@Builder
+public class BookingDetailResponse {
+
+  Long id;
+  String bookingCode;
+  Long carId;
+  Long userId;
+  LocalDateTime startTime;
+  LocalDateTime endTime;
+  BookingStatus status;
+  BigDecimal totalPrice;
+  BigDecimal depositAmount;
+  LocalDateTime createdAt;
+}
+

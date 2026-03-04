@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { bookingApi } from "../api/api";
 import {
   User,
   Calendar,
@@ -17,6 +18,12 @@ import {
 export function MyAccount({ onClose }) {
   const [activeSection, setActiveSection] = useState("bookings");
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [history, setHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState("");
 
   // Mock user data
   const user = {
@@ -29,7 +36,7 @@ export function MyAccount({ onClose }) {
     joinDate: "Tháng 1, 2024",
   };
 
-  // Mock booking data
+  // Mock booking data (upcoming/current still mocked for now)
   const bookings = {
     upcoming: [
       {
@@ -80,55 +87,56 @@ export function MyAccount({ onClose }) {
         status: "in-progress",
       },
     ],
-    past: [
-      {
-        id: 4,
-        car: {
-          name: "Mazda CX-5 2023",
-          image:
-            "https://images.unsplash.com/photo-1679157756341-288580b10759?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXpkYSUyMGN4NSUyMGdyYXklMjBzdXZ8ZW58MXx8fHwxNzcyNjEwNjU1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-          licensePlate: "59A-77777",
-        },
-        startDate: "20/02/2026",
-        endDate: "23/02/2026",
-        duration: "3 ngày",
-        location: "Quận 2, TP.HCM",
-        totalPrice: 1800000,
-        status: "completed",
-        hasReview: false,
-      },
-      {
-        id: 5,
-        car: {
-          name: "VinFast VF8 2024",
-          image:
-            "https://images.unsplash.com/photo-1768024175235-248653723f98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBlbGVjdHJpYyUyMHN1diUyMGNhcnxlbnwxfHx8fDE3NzI1NTU4NDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-          licensePlate: "30F-12121",
-        },
-        startDate: "10/02/2026",
-        endDate: "12/02/2026",
-        duration: "2 ngày",
-        location: "Quận Bình Thạnh, TP.HCM",
-        totalPrice: 1400000,
-        status: "completed",
-        hasReview: true,
-      },
-      {
-        id: 6,
-        car: {
-          name: "Honda CR-V 2022",
-          image:
-            "https://images.unsplash.com/photo-1654870646430-e5b6f2c0fa93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob25kYSUyMGNydiUyMHN1diUyMGJsdWV8ZW58MXx8fHwxNzcyNjEwNjU0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-          licensePlate: "51H-55555",
-        },
-        startDate: "01/02/2026",
-        endDate: "03/02/2026",
-        duration: "2 ngày",
-        location: "Quận 10, TP.HCM",
-        totalPrice: 1000000,
-        status: "cancelled",
-      },
-    ],
+    past: [],
+  };
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsLoadingHistory(true);
+      setHistoryError("");
+      try {
+        const data = await bookingApi.getHistory();
+        // Map backend history items into UI booking card format
+        const mapped = data.map((item) => ({
+          id: item.id,
+          car: {
+            name: `Car #${item.carId}`,
+            image:
+              "https://images.unsplash.com/photo-1654870646430-e5b6f2c0fa93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+            licensePlate: "Updating...",
+          },
+          startDate: new Date(item.startTime).toLocaleDateString("vi-VN"),
+          endDate: new Date(item.endTime).toLocaleDateString("vi-VN"),
+          duration: "",
+          location: "",
+          totalPrice: Number(item.totalPrice),
+          status: item.status.toLowerCase(),
+          hasReview: false,
+        }));
+        setHistory(mapped);
+      } catch (err) {
+        console.error("Failed to load booking history", err);
+        setHistoryError("Failed to load booking history");
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  const handleViewDetails = async (bookingId) => {
+    setIsLoadingDetail(true);
+    setDetailError("");
+    try {
+      const detail = await bookingApi.getById(bookingId);
+      setSelectedBooking(detail);
+    } catch (err) {
+      console.error("Failed to load booking detail", err);
+      setDetailError("Failed to load booking detail");
+    } finally {
+      setIsLoadingDetail(false);
+    }
   };
 
   const sidebarItems = [
@@ -241,7 +249,10 @@ export function MyAccount({ onClose }) {
                   Contact the host
                 </button>
               )}
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700">
+              <button
+                onClick={() => handleViewDetails(booking.id)}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700"
+              >
                 View details
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -398,7 +409,7 @@ export function MyAccount({ onClose }) {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  History ({bookings.past.length})
+                  History ({history.length})
                 </button>
               </div>
 
@@ -408,13 +419,30 @@ export function MyAccount({ onClose }) {
                   bookings.upcoming.map(renderBookingCard)}
                 {activeTab === "current" &&
                   bookings.current.map(renderBookingCard)}
-                {activeTab === "past" && bookings.past.map(renderBookingCard)}
+                {activeTab === "past" &&
+                  !isLoadingHistory &&
+                  history.map(renderBookingCard)}
+
+                {activeTab === "past" && isLoadingHistory && (
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-gray-600">
+                    Loading booking history...
+                  </div>
+                )}
+
+                {activeTab === "past" && historyError && (
+                  <div className="bg-white border border-red-200 rounded-xl p-6 text-center text-red-600">
+                    {historyError}
+                  </div>
+                )}
 
                 {/* Empty State */}
                 {((activeTab === "upcoming" &&
                   bookings.upcoming.length === 0) ||
                   (activeTab === "current" && bookings.current.length === 0) ||
-                  (activeTab === "past" && bookings.past.length === 0)) && (
+                  (activeTab === "past" &&
+                    !isLoadingHistory &&
+                    history.length === 0 &&
+                    !historyError)) && (
                   <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
                     <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -461,6 +489,62 @@ export function MyAccount({ onClose }) {
           )}
         </div>
       </div>
+
+      {selectedBooking && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Booking details
+            </h3>
+
+            {isLoadingDetail ? (
+              <p className="text-gray-600">Loading...</p>
+            ) : detailError ? (
+              <p className="text-red-600">{detailError}</p>
+            ) : (
+              <div className="space-y-2 text-sm text-gray-700">
+                <p>
+                  <span className="font-semibold">Booking code:</span>{" "}
+                  {selectedBooking.bookingCode}
+                </p>
+                <p>
+                  <span className="font-semibold">Car ID:</span>{" "}
+                  {selectedBooking.carId}
+                </p>
+                <p>
+                  <span className="font-semibold">Start:</span>{" "}
+                  {new Date(selectedBooking.startTime).toLocaleString("vi-VN")}
+                </p>
+                <p>
+                  <span className="font-semibold">End:</span>{" "}
+                  {new Date(selectedBooking.endTime).toLocaleString("vi-VN")}
+                </p>
+                <p>
+                  <span className="font-semibold">Total price:</span>{" "}
+                  {formatPrice(selectedBooking.totalPrice)}
+                </p>
+                <p>
+                  <span className="font-semibold">Deposit:</span>{" "}
+                  {formatPrice(selectedBooking.depositAmount)}
+                </p>
+                <p>
+                  <span className="font-semibold">Status:</span>{" "}
+                  {selectedBooking.status}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
