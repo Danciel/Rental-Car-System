@@ -1,9 +1,15 @@
 server:
   port: 8083
 
+service:
+  user:
+    url: http://localhost:8081
+  car:
+    url: http://localhost:8082
+
 spring:
   application:
-    name: car-service
+    name: booking-service
 
   datasource:
     url: jdbc:postgresql://localhost:5433/booking_db

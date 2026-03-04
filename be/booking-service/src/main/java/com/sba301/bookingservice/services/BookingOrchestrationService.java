@@ -5,6 +5,6 @@ import com.sba301.bookingservice.dto.BookCarAndPayResponse;
 
 public interface BookingOrchestrationService {
 
-  BookCarAndPayResponse bookCarAndDoPayment(BookCarAndPayRequest request);
+  BookCarAndPayResponse bookCarAndDoPayment(BookCarAndPayRequest request, String email);
 }
 
