@@ -11,9 +11,7 @@ public record BookCarAndPayRequest(
     @NotNull @Future LocalDateTime startTime,
     @NotNull @Future LocalDateTime endTime,
     @NotNull BigDecimal rentalPrice,
-    @NotNull BigDecimal depositAmount,
-    @NotNull String paymentMethod,
-    String preInspectionNote
+    @NotNull BigDecimal depositAmount
 ) {
 }
 

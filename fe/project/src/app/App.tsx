@@ -21,6 +21,8 @@ interface BookingData {
   totalPrice: number;
 }
 
+const BOOKING_API_BASE_URL = 'http://localhost:8083';
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
@@ -58,8 +60,43 @@ export default function App() {
     setCurrentPage('checkout');
   };
 
-  const handleConfirmBooking = () => {
-    setCurrentPage('confirmation');
+  const handleConfirmBooking = async () => {
+    if (!selectedCar || !bookingData) return;
+
+    try {
+      const startTime = `${bookingData.pickupDate}T10:00:00`;
+      const endTime = `${bookingData.returnDate}T10:00:00`;
+
+      const payload = {
+        userId: 1, // TODO: replace with logged-in user ID
+        carId: selectedCar.id,
+        startTime,
+        endTime,
+        rentalPrice: bookingData.totalPrice,
+        depositAmount: selectedCar.policies?.deposit ?? 0
+      };
+
+      const response = await fetch(
+        `${BOOKING_API_BASE_URL}/api/bookings/book-and-pay`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Booking failed');
+      }
+
+      // const data = await response.json(); // not used yet, but available
+      setCurrentPage('confirmation');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to create booking. Please try again.');
+    }
   };
 
   return (
