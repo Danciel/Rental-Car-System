@@ -2,14 +2,14 @@ import { Car, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface NavbarProps {
-  currentPage?: 'home' | 'search' | 'admin';
-  onNavigate?: (page: 'home' | 'search' | 'admin') => void;
+  currentPage?: 'home' | 'search' | 'admin' | 'login' | 'list-car' | 'account';
+  onNavigate?: (page: 'home' | 'search' | 'admin' | 'login' | 'list-car' | 'account') => void;
 }
 
 export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleNavigation = (page: 'home' | 'search' | 'admin', anchor?: string) => {
+  const handleNavigation = (page: 'home' | 'search' | 'admin' | 'login' | 'list-car' | 'account', anchor?: string) => {
     if (onNavigate) {
       onNavigate(page);
       setMobileMenuOpen(false);
@@ -71,10 +71,14 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
             >
               Admin
             </button>
-            <button className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors">
+            <button 
+              onClick={() => handleNavigation('login')}
+              className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors"
+            >
               Login
             </button>
             <button 
+              onClick={() => handleNavigation('login')}
               className="px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
               style={{ backgroundColor: '#1E40AF' }}
             >

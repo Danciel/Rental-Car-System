@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navbar } from '@/app/components/navbar';
 import { HeroSection } from '@/app/components/hero-section';
 import { HowItWorks } from '@/app/components/how-it-works';
@@ -10,8 +10,20 @@ import { CarDetailPage } from '@/app/components/car-detail-page';
 import { CheckoutPage } from '@/app/components/checkout-page';
 import { Admin } from '@/app/components/admin/admin.jsx';
 import { cars, Car } from '@/app/data/cars';
+import { LoginSignup } from '@/app/components/login-signup';
+import { ListYourCar } from '@/app/components/list-your-car';
+import { MyAccount } from '@/app/components/my-account';
 
-type Page = 'home' | 'search' | 'car-detail' | 'checkout' | 'confirmation' | 'admin';
+type Page =
+  | 'home'
+  | 'search'
+  | 'car-detail'
+  | 'checkout'
+  | 'confirmation'
+  | 'admin'
+  | 'login'
+  | 'list-car'
+  | 'account';
 
 interface BookingData {
   carId: number;
@@ -28,9 +40,73 @@ export default function App() {
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
 
-  // ADMIN
+  // Map page <-> path
+  const pageToPath = useMemo<Record<Page, string>>(
+    () => ({
+      home: '/',
+      search: '/search',
+      'car-detail': '/car',
+      checkout: '/checkout',
+      confirmation: '/confirmation',
+      admin: '/admin',
+      login: '/login',
+      'list-car': '/list-your-car',
+      account: '/account'
+    }),
+    []
+  );
+
+  const pathToPage = useMemo<Record<string, Page>>(
+    () => ({
+      '/': 'home',
+      '/search': 'search',
+      '/car': 'car-detail',
+      '/checkout': 'checkout',
+      '/confirmation': 'confirmation',
+      '/admin': 'admin',
+      '/login': 'login',
+      '/list-your-car': 'list-car',
+      '/account': 'account'
+    }),
+    []
+  );
+
+  // Navigate helper: update state + URL
+  const go = (page: Page, options?: { replace?: boolean }) => {
+    setCurrentPage(page);
+    const path = pageToPath[page] ?? '/';
+    if (typeof window !== 'undefined') {
+      if (options?.replace) window.history.replaceState({}, '', path);
+      else window.history.pushState({}, '', path);
+    }
+  };
+
+  // Init page from URL + handle browser back/forward
+  useEffect(() => {
+    const syncFromPath = (pathname: string) => {
+      const page = pathToPage[pathname];
+      if (page) {
+        setCurrentPage(page);
+      } else {
+        // fallback nếu path lạ
+        setCurrentPage('home');
+        window.history.replaceState({}, '', '/');
+      }
+    };
+
+    syncFromPath(window.location.pathname);
+
+    const onPopState = () => syncFromPath(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [pathToPage]);
+
+  const handleStartEarning = () => go('list-car');
+
+  // ADMIN (giữ như bạn đang làm)
   if (currentPage === 'admin') {
-    return <Admin onBackToSite={() => setCurrentPage('home')} />;
+    return <Admin onBackToSite={() => go('home', { replace: true })} />;
   }
 
   const selectedCar: Car | null =
@@ -38,7 +114,7 @@ export default function App() {
 
   const handleViewCarDetail = (carId: number) => {
     setSelectedCarId(carId);
-    setCurrentPage('car-detail');
+    go('car-detail');
   };
 
   const handleCheckout = (
@@ -57,7 +133,7 @@ export default function App() {
       totalPrice
     });
 
-    setCurrentPage('checkout');
+    go('checkout');
   };
 
   const handleConfirmBooking = async () => {
@@ -76,23 +152,15 @@ export default function App() {
         depositAmount: selectedCar.policies?.deposit ?? 0
       };
 
-      const response = await fetch(
-        `${BOOKING_API_BASE_URL}/api/bookings/book-and-pay`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      const response = await fetch(`${BOOKING_API_BASE_URL}/api/bookings/book-and-pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-      if (!response.ok) {
-        throw new Error('Booking failed');
-      }
+      if (!response.ok) throw new Error('Booking failed');
 
-      // const data = await response.json(); // not used yet, but available
-      setCurrentPage('confirmation');
+      go('confirmation');
     } catch (error) {
       console.error(error);
       alert('Failed to create booking. Please try again.');
@@ -101,13 +169,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar currentPage={currentPage as any} onNavigate={setCurrentPage as any} />
+      {/* Navbar vẫn dùng cơ chế onNavigate -> go */}
+      <Navbar currentPage={currentPage as any} onNavigate={go as any} />
 
       {currentPage === 'home' ? (
         <>
-          <HeroSection onSearchClick={() => setCurrentPage('search')} />
+          <HeroSection onSearchClick={() => go('search')} />
           <HowItWorks />
-          <HostSection />
+          <HostSection onStartEarning={handleStartEarning} />
           <FAQSection />
           <Footer />
         </>
@@ -118,11 +187,7 @@ export default function App() {
         </>
       ) : currentPage === 'car-detail' && selectedCar ? (
         <>
-          <CarDetailPage
-            car={selectedCar}
-            onBack={() => setCurrentPage('search')}
-            onCheckout={handleCheckout}
-          />
+          <CarDetailPage car={selectedCar} onBack={() => go('search')} onCheckout={handleCheckout} />
           <Footer />
         </>
       ) : currentPage === 'checkout' && selectedCar && bookingData ? (
@@ -133,9 +198,24 @@ export default function App() {
             returnDate={bookingData.returnDate}
             totalDays={bookingData.totalDays}
             totalPrice={bookingData.totalPrice}
-            onBack={() => setCurrentPage('car-detail')}
+            onBack={() => go('car-detail')}
             onConfirm={handleConfirmBooking}
           />
+          <Footer />
+        </>
+      ) : currentPage === 'login' ? (
+        <>
+          <LoginSignup onClose={() => go('home')} />
+          <Footer />
+        </>
+      ) : currentPage === 'list-car' ? (
+        <>
+          <ListYourCar onClose={() => go('home')} />
+          <Footer />
+        </>
+      ) : currentPage === 'account' ? (
+        <>
+          <MyAccount onClose={() => go('home')} />
           <Footer />
         </>
       ) : currentPage === 'confirmation' ? (
@@ -158,7 +238,7 @@ export default function App() {
                 onClick={() => {
                   setBookingData(null);
                   setSelectedCarId(null);
-                  setCurrentPage('home');
+                  go('home');
                 }}
                 className="w-full py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
                 style={{ backgroundColor: '#1E40AF' }}
