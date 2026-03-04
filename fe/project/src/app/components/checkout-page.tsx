@@ -14,6 +14,8 @@ import {
 import { Car, reviews as allReviews } from '@/app/data/cars';
 import { OwnerProfile } from '@/app/components/owner-profile';
 import { ReviewsSection } from '@/app/components/reviews-section';
+import { bookingApi } from '@/app/api/api';
+import { useState } from 'react';
 
 interface CheckoutPageProps {
   car: Car;
@@ -25,16 +27,23 @@ interface CheckoutPageProps {
   onConfirm: () => void;
 }
 
-export function CheckoutPage({
-  car,
-  pickupDate,
-  returnDate,
-  totalDays,
-  totalPrice,
-  onBack,
-  onConfirm
-}: CheckoutPageProps) {
-  const images = car.images || [car.image];
+export function CheckoutPage({ car, pickupDate, returnDate, totalDays, totalPrice, onBack, onConfirm }: CheckoutPageProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = async () => {
+    if (loading) return;
+    try {
+      setLoading(true);
+      setError(null);
+      onConfirm(); // ← just delegate to App.handleConfirmBooking, nothing else
+    } catch (err: any) {
+      setError(err.message || "Đặt xe thất bại. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };// Add inside the component, before return
+    const images = car.images || [car.image];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,11 +100,13 @@ export function CheckoutPage({
             <div className="mt-4 text-lg font-semibold">Total: ${totalPrice}</div>
           )}
 
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           <button
-            onClick={onConfirm}
-            className="w-full mt-6 py-4 bg-orange-500 text-white rounded-lg font-bold"
+            onClick={handleConfirm}
+            disabled={loading}
+            className="w-full mt-6 py-4 bg-orange-500 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm Booking
+            {loading ? "Đang xử lý..." : "Confirm Booking"}
           </button>
         </div>
       </div>

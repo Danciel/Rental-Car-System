@@ -13,6 +13,7 @@ import { cars, Car } from '@/app/data/cars';
 import { LoginSignup } from '@/app/components/login-signup';
 import { ListYourCar } from '@/app/components/list-your-car';
 import { MyAccount } from '@/app/components/my-account';
+import { bookingApi } from '@/app/api/api';
 
 type Page =
   | 'home'
@@ -32,8 +33,6 @@ interface BookingData {
   totalDays: number;
   totalPrice: number;
 }
-
-const BOOKING_API_BASE_URL = 'http://localhost:8083';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -140,30 +139,22 @@ export default function App() {
     if (!selectedCar || !bookingData) return;
 
     try {
-      const startTime = `${bookingData.pickupDate}T10:00:00`;
-      const endTime = `${bookingData.returnDate}T10:00:00`;
+      const email = localStorage.getItem("USER_EMAIL") ?? "";
+      const userId = JSON.parse(localStorage.getItem("user") ?? "{}").userId ?? 1;
 
-      const payload = {
-        userId: 1, // TODO: replace with logged-in user ID
+      await bookingApi.bookAndPay({
+        userId,
         carId: selectedCar.id,
-        startTime,
-        endTime,
+        startTime: `${bookingData.pickupDate}T10:00:00`,
+        endTime: `${bookingData.returnDate}T10:00:00`,
         rentalPrice: bookingData.totalPrice,
         depositAmount: selectedCar.policies?.deposit ?? 0
-      };
-
-      const response = await fetch(`${BOOKING_API_BASE_URL}/api/bookings/book-and-pay`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) throw new Error('Booking failed');
+      }, email);
 
       go('confirmation');
     } catch (error) {
       console.error(error);
-      alert('Failed to create booking. Please try again.');
+      alert('Đặt xe thất bại. Vui lòng thử lại.');
     }
   };
 

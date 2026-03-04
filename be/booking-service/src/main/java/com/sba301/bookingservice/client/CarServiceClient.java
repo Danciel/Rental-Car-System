@@ -37,7 +37,10 @@ public class CarServiceClient {
             if (response.getBody() == null) return false;
 
             Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+            if (data == null) return false;
             String status = (String) data.get("status");
+            log.info("Car {} status: {}", carId, status);
+
             return "AVAILABLE".equals(status);
 
         } catch (Exception e) {
