@@ -1,13 +1,13 @@
 server:
-  port: 8081
+  port: 8084
 
 spring:
   application:
-    name: user-service
+    name: payment-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/user_db
-#   TODO: use env vars for username and password
+    url: jdbc:postgresql://localhost:5433/payment_db
+    #   TODO: use env vars for username and password
     username: p2p_admin
     password: secretpassword
     driver-class-name: org.postgresql.Driver
@@ -24,5 +24,5 @@ spring:
     enabled: false
 
 jwt:
-  # ${TÊN_BIẾN_ENV:Giá_trị_mặc_định_nếu_không_tìm_thấy}
+  # ${T�N_BI?N_ENV:Gi�_tr?_m?c_??nh_n?u_kh�ng_t�m_th?y}
   secret: ${JWT_SECRET:Y2h1b2lfYmlfbWF0X3NpZXVfY2FwX2N1YV9oZV90aG9uZ19taWNyb3NlcnZpY2VzX3AycA}

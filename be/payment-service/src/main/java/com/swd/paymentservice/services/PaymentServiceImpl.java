@@ -32,14 +32,14 @@ public class PaymentServiceImpl implements IPaymentService {
     public PaymentResponse initPayment(PaymentRequest request, String clientIp) {
         // TODO (chuẩn): gọi booking-service lấy amount + userId theo bookingNo
         // Demo sinh viên: giả lập
-        BigDecimal amount = BigDecimal.valueOf(1500000);
         Long userId = 1L;
 
         PaymentTransaction tx = new PaymentTransaction();
         tx.setBookingNo(request.getBookingNo());
         tx.setUserId(userId);
-        tx.setAmount(amount);
+        tx.setAmount(request.getAmount());
         tx.setMethod(request.getMethod());
+        tx.setType(request.getType());
         tx.setStatus(PaymentStatus.PENDING);
         tx.setTxnRefCode(generateTxnRef(request.getBookingNo()));
 

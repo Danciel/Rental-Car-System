@@ -23,7 +23,21 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        if (request.getURI().getPath().contains("/login") || request.getURI().getPath().contains("/register")) {
+        // Public endpoints: không cần token, bỏ qua filter
+        String path = request.getURI().getPath();
+        String method = request.getMethod().name();
+
+        boolean isPublicPath = path.contains("/login") ||
+                path.contains("/register") ||
+                // VNPAY/MOMO gọi về ko cần Token
+                path.contains("/api/payments/callback") ||
+                // Cho phép bất kỳ ai xem danh sách xe bằng lệnh GET
+                (path.startsWith("/api/cars") && method.equals("GET")) ||
+                (path.startsWith("/api/car-brands") && method.equals("GET")) ||
+                (path.startsWith("/api/car-types") && method.equals("GET")) ||
+                (path.startsWith("/api/car-models") && method.equals("GET"));
+
+        if (isPublicPath) {
             return chain.filter(exchange);
         }
         java.util.List<String> authHeaders = request.getHeaders().get(HttpHeaders.AUTHORIZATION);
