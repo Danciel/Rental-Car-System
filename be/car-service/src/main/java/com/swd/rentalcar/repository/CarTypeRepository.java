@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CarTypeRepository extends JpaRepository<CarType, Long> {
     boolean existsByTypeName(@NotBlank(message = "Type name is required") String typeName);
+
+    CarType findByTypeName(String hatchback);
 }

@@ -3,6 +3,7 @@ package com.swd.rentalcar.entity;
 
 import com.swd.rentalcar.entity.enums.CarStatus;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

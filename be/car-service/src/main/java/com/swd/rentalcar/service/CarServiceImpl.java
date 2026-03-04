@@ -17,8 +17,10 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -251,6 +253,15 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
+    public List<CarResponse> getCarsByBrand(Long brandId) {
+        findBrandById(brandId); // validates brand exists, throws if not found
+        return carRepository.findByCarModelBrandId(brandId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public CarResponse updateCar(Long id, CarRequest request) {
         Car car = findCarById(id);
@@ -355,16 +366,31 @@ public class CarServiceImpl implements CarService{
     }
 
     private CarResponse toResponse(Car car) {
-        CarResponse response = new CarResponse();
-        response.setId(car.getId());
-        response.setLicensePlate(car.getLicensePlate());
-        response.setBasePricePerDay(car.getBasePricePerDay());
-        response.setDepositAmount(car.getDepositAmount());
-        response.setStatus(car.getStatus());
-        response.setCarModelId(toResponse(car.getCarModel()));
-        response.setImages(car.getImages().stream().map(this::toResponse).toList());
-        response.setOwnerId(car.getOwnerId());
-        return response;
+//        CarResponse response = new CarResponse();
+//        response.setId(car.getId());
+//        response.setLicensePlate(car.getLicensePlate());
+//        response.setBasePricePerDay(car.getBasePricePerDay());
+//        response.setDepositAmount(car.getDepositAmount());
+//        response.setStatus(car.getStatus());
+//        response.setCarModelId(toResponse(car.getCarModel()));
+//        response.setImages(car.getImages().stream().map(this::toResponse).toList());
+//        response.setOwnerId(car.getOwnerId());
+//        response.setBrandId(car.getCarModel().getBrand().getId());
+//        response.setBrandName(car.getCarModel().getBrand().getName());
+//        return response;
+            return CarResponse.builder()
+                    .id(car.getId())
+                    .licensePlate(car.getLicensePlate())
+                    .basePricePerDay(car.getBasePricePerDay())
+                    .depositAmount(car.getDepositAmount())
+                    .status(car.getStatus())
+                    .carModelId(car.getCarModel() != null ? toResponse(car.getCarModel()) : null)
+                    .brandId(car.getCarModel() != null && car.getCarModel().getBrand() != null
+                            ? car.getCarModel().getBrand().getId() : null)
+                    .brandName(car.getCarModel() != null && car.getCarModel().getBrand() != null
+                            ? car.getCarModel().getBrand().getName() : null)
+                    .images(toImageResponseSet(car.getImages()))
+                    .build();
     }
 
     private CarBrandResponse toResponse(CarBrand carBrand) {
@@ -405,5 +431,11 @@ public class CarServiceImpl implements CarService{
         response.setId(carType.getId());
         response.setTypeName(carType.getTypeName());
         return response;
+    }
+    private List<CarImageResponse> toImageResponseSet(Set<CarImage> images) {
+        if (images == null) return new ArrayList<>();
+        return images.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 }

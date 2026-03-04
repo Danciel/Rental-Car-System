@@ -4,6 +4,8 @@ package com.swd.rentalcar.client;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,8 +22,18 @@ public class UserServiceClient {
     @Value("http://localhost:8081")
     private String userServiceUrl;
 
+    // Cache the token after login so existsById can reuse it
+    private String cachedToken = null;
+
+
     public boolean existsById(Long id) {
         try {
+            HttpHeaders headers = new HttpHeaders();
+            if (cachedToken != null) {
+                headers.setBearerAuth(cachedToken);
+            }
+
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
             Map<String, Object> response = restTemplate.getForObject(
                     userServiceUrl + "/api/users/{id}",
                     Map.class,
@@ -61,6 +73,9 @@ public class UserServiceClient {
             // Then get "user" → "id"
             Map<String, Object> user = (Map<String, Object>) data.get("user");
             if (user == null) return null;
+
+            // Cache the token for subsequent calls
+            cachedToken = (String) data.get("accessToken");
 
             Object id = user.get("id");
             return id != null ? Long.valueOf(id.toString()) : null;

@@ -159,15 +159,25 @@ public class CarController {
         return ResponseEntity.ok(carService.getCarById(id));
     }
 
+    //TODO: Later
+//    @GetMapping("licenseplate/{licensePlate}")
+//    public ResponseEntity<CarResponse> getCarByLicensePlate(@PathVariable String licensePlate) {
+//        return ResponseEntity.ok(carService.getCarByLicensePlate(licensePlate));
+//    }
+
     @GetMapping
     public ResponseEntity<List<CarResponse>> getAllCars(
             @RequestParam(required = false) CarStatus status,
-            @RequestParam(required = false) Long modelId) {
+            @RequestParam(required = false) Long modelId,
+            @RequestParam(required = false) Long brandId) {
         if (status != null) {
             return ResponseEntity.ok(carService.getCarsByStatus(status));
         }
         if (modelId != null) {
             return ResponseEntity.ok(carService.getCarsByModel(modelId));
+        }
+        if (brandId != null) {
+            return ResponseEntity.ok(carService.getCarsByBrand(brandId));
         }
         return ResponseEntity.ok(carService.getAllCars());
     }

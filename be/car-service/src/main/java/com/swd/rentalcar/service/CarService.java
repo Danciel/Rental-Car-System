@@ -73,6 +73,8 @@ public interface CarService {
 
     List<CarResponse> getCarsByModel(Long carModelId);
 
+    List<CarResponse> getCarsByBrand(Long brandId);
+
     CarResponse updateCar(Long id, CarRequest request);
 
     CarResponse updateCarStatus(Long id, CarStatus status);

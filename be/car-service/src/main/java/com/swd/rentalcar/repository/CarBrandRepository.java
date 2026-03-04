@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CarBrandRepository extends JpaRepository<CarBrand, Long> {
     boolean existsByName(@NotBlank(message = "Brand name is required") String name);
+
+    CarBrand findByName(String toyota);
 }
