@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -13,6 +14,7 @@ public class UserProfileResponse {
     private String email;
     private String fullName;
     private String phoneNumber;
+    private LocalDate dateOfBirth;
     private String avatarUrl;
     private BigDecimal walletBalance;
     private String status;

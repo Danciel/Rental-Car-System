@@ -1,10 +1,12 @@
 package com.swb.userservice.entities;
 
+import com.swb.userservice.enums.KYCStatus;
 import com.swb.userservice.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,6 +35,8 @@ public class User {
     @Column(unique = true, length = 15)
     private String phoneNumber;
 
+    private LocalDate dateOfBirth;
+
     private String avatarUrl;
 
     @Column(precision = 19, scale = 2, nullable = false)
@@ -44,6 +48,10 @@ public class User {
 
     @Column(name = "is_license_verified", nullable = false)
     private Boolean isLicenseVerified;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kyc_status", length = 20)
+    private KYCStatus kycStatus;
 
     private LocalDateTime deletionRequestedAt;
 
