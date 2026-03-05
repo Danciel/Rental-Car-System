@@ -27,7 +27,6 @@ public class BookingController {
   private final BookingRepository bookingRepository;
   private final UserServiceClient userServiceClient;
 
-  // Thay thế @PostMapping("/book-and-pay") cũ bằng cái này
   @PostMapping("/request")
   public ResponseEntity<ApiResponse<BookingDetailResponse>> requestBooking(
           @RequestHeader("X-User-Email") String email,
@@ -37,7 +36,6 @@ public class BookingController {
     return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi yêu cầu thuê xe thành công. Vui lòng chờ chủ xe duyệt."));
   }
 
-  // Thêm API này vào trong BookingController
   @PatchMapping("/{id}/respond")
   public ResponseEntity<ApiResponse<String>> respondToBooking(
           @PathVariable Long id,
@@ -50,6 +48,17 @@ public class BookingController {
             : "Đã TỪ CHỐI yêu cầu thuê xe.";
 
     return ResponseEntity.ok(ApiResponse.success(null, message));
+  }
+
+  @PostMapping("/{id}/mock-pay")
+  public ResponseEntity<ApiResponse<String>> mockPayment(
+          @PathVariable Long id,
+          @RequestHeader("X-User-Email") String email) {
+
+    bookingOrchestrationService.processMockPayment(id, email);
+
+    return ResponseEntity.ok(ApiResponse.success(null,
+            "Thanh toán thành công! Hợp đồng đã được tạo và xe đã được khóa lịch."));
   }
 
   @GetMapping("/history")

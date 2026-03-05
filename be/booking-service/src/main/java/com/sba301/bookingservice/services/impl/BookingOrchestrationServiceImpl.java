@@ -110,6 +110,55 @@ public class BookingOrchestrationServiceImpl implements com.sba301.bookingservic
     bookingRepository.save(booking);
   }
 
+  @Override
+  @Transactional
+  public void processMockPayment(Long bookingId, String email) {
+    // 1. Xác thực người dùng đang thanh toán (Khách hàng)
+    Long currentUserId = verifyUser(email);
+
+    // 2. Tìm Booking
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin đặt xe"));
+
+    // 3. Kiểm tra quyền và trạng thái
+    if (!booking.getUserId().equals(currentUserId)) {
+      throw new RuntimeException("Bạn không có quyền thanh toán cho chuyến đi này");
+    }
+    if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+      throw new RuntimeException("Chuyến đi không ở trạng thái chờ thanh toán");
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+
+    // 4. Cập nhật trạng thái Booking thành Đã xác nhận
+    booking.setStatus(BookingStatus.CONFIRMED);
+
+    // 5. TẠO HỢP ĐỒNG THUÊ XE (Rental Contract)
+    RentalContract rentalContract = RentalContract.builder()
+            .booking(booking)
+            .contractNumber(generateContractNumber())
+            .startTime(booking.getStartTime())
+            .endTime(booking.getEndTime())
+            .status(RentalContractStatus.ACTIVE)
+            .rentalPrice(booking.getTotalPrice())
+            .depositAmount(booking.getDepositAmount())
+            .totalAmount(booking.getTotalPrice())
+            .createdAt(now)
+            .build();
+
+    rentalContract = rentalContractRepository.save(rentalContract);
+    booking.setRentalContract(rentalContract);
+
+    // Lưu lại thay đổi Booking
+    bookingRepository.save(booking);
+
+    // 6. Đổi trạng thái Xe thành "Đang thuê" (RENTED)
+    updateCarToRented(booking.getCarId(), email);
+
+    log.info("Mock payment successful for booking {}. Contract {} created.",
+            booking.getBookingCode(), rentalContract.getContractNumber());
+  }
+
   // ═════════════════════════════════════════════════════════════════════════
   // STEP FUNCTIONS
   // ═════════════════════════════════════════════════════════════════════════
