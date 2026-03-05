@@ -1,9 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { SearchBar } from '@/app/components/search-bar';
-import { FilterSidebar, FilterState } from '@/app/components/filter-sidebar';
+import { FilterSidebar, FilterBar, FilterState } from '@/app/components/filter-sidebar'; // dùng FilterBar
 import { CarCard } from '@/app/components/car-card';
-//import { cars } from '@/app/data/cars';
-import { carApi, CarResponse } from '@/app/api/api';
 import { mapCarResponseToFrontend } from '@/app/api/mapper';
 import { Car } from '@/app/data/cars';
 import { ArrowUp } from 'lucide-react';
@@ -30,6 +28,7 @@ export function SearchPage({ onViewCarDetail }: SearchPageProps) {
 
   // ── Fetch cars from backend on mount ───────────────────────────────────────
   useEffect(() => {
+
     const fetchCars = async () => {
       try {
         setLoading(true);

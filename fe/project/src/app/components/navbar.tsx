@@ -55,7 +55,7 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
   };
 
   const handleLogout = () => {
-    // Xóa Token, reset state và tải lại trang để dọn dẹp dữ liệu
+    // Xóa Token, reset state và điều hướng về trang chủ (không reload toàn bộ trang)
     localStorage.removeItem("ACCESS_TOKEN");
     localStorage.removeItem("USER_EMAIL");
     setUser(null);
