@@ -127,8 +127,8 @@ export const carBrandApi = {
 // ── BOOKING ENDPOINTS ─────────────────────────────────────────────────────────
 
 export const bookingApi = {
-  bookAndPay: (request: BookCarRequest, email: string) =>
-    post<BookCarResponse>(`${BOOKING_SERVICE_URL}/bookings/book-and-pay`, request, email),
+  requestBooking: (request: BookCarRequest, email: string) =>
+    post<BookCarResponse>(`${BOOKING_SERVICE_URL}/bookings/request`, request, email),
 
   getHistory: () =>
     get<BookingHistoryItemResponse[]>(`${BOOKING_SERVICE_URL}/bookings/history`, true),

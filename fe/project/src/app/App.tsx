@@ -429,7 +429,7 @@ export default function App() {
       const email = localStorage.getItem('USER_EMAIL') ?? '';
       const userId = JSON.parse(localStorage.getItem('user') ?? '{}').userId ?? 1;
 
-      await bookingApi.bookAndPay(
+      await bookingApi.requestBooking(
           {
             userId,
             carId: selectedCarDetail.id,
@@ -516,21 +516,22 @@ export default function App() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Booking Confirmed!</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Yêu cầu đã được gửi!</h1>
                   <p className="text-gray-600 mb-6">
-                    Your car rental has been successfully booked. You will receive a confirmation email shortly.
+                    Yêu cầu thuê xe của bạn đã được gửi thành công.
+                    Vui lòng chờ chủ xe xác nhận — chúng tôi sẽ thông báo khi có phản hồi.
                   </p>
                   <button
-                      onClick={() => {
-                        setBookingData(null);
-                        setSelectedCarId(null);
-                        setSelectedCarDetail(null);
-                        go('home');
-                      }}
-                      className="w-full py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
-                      style={{ backgroundColor: '#1E40AF' }}
+                    onClick={() => {
+                      setBookingData(null);
+                      setSelectedCarId(null);
+                      setSelectedCarDetail(null);
+                      go('home');
+                    }}
+                    className="w-full py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
+                    style={{ backgroundColor: '#1E40AF' }}
                   >
-                    Back to Home
+                    Về trang chủ
                   </button>
                 </div>
               </div>
