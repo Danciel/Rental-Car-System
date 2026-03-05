@@ -5,6 +5,8 @@ import { CarCard } from '@/app/components/car-card';
 import { mapCarResponseToFrontend } from '@/app/api/mapper';
 import { Car } from '@/app/data/cars';
 import { ArrowUp } from 'lucide-react';
+import { carApi } from '@/app/api/api';
+
 
 interface SearchPageProps {
   onViewCarDetail: (carId: number) => void;
@@ -20,7 +22,7 @@ export function SearchPage({ onViewCarDetail }: SearchPageProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     carTypes: [],
-    brandName: [],
+    brandNames: [],
     priceRange: [0, 99999999],
     fuelTypes: [],
     minRating: 0
