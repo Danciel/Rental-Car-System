@@ -1,14 +1,14 @@
 export interface Car {
   id: number;
   name: string;
-  type: 'SUV' | 'Sedan' | 'Electric' | 'Sports' | 'Compact' | 'Convertible';
+  type: string;
   image: string;
   images?: string[]; // Additional images for gallery
   rating: number;
   reviews: number;
-  transmission: 'Automatic' | 'Manual';
+  transmission: string;
   seats: number;
-  fuelType: 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
+  fuelType: string;
   pricePerDay: number;
   location: string;
   // Detailed information
@@ -16,6 +16,7 @@ export interface Car {
   licensePlate?: string;
   description?: string;
   features?: string[];
+  brandName?: string;
   owner?: {
     name: string;
     avatar: string;

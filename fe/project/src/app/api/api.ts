@@ -36,7 +36,19 @@ export interface CarResponse {
   brandId: number;
   brandName: string;
   carModel: CarModelResponse;
+  carModelId?: CarModelResponse;
   images: CarImage[];
+}
+
+export interface CarTypeResponse {
+id: number;
+typeName: string;
+}
+
+export interface CarBrandResponse {
+id: number;
+name: string;
+logoUrl: string;
 }
 
 export interface BookCarRequest {
@@ -102,6 +114,14 @@ export const carApi = {
 
   getByStatus: (status: string) =>
     get<CarResponse[]>(`${CAR_SERVICE_URL}/cars?status=${status}`),
+};
+
+export const carTypeApi = {
+  getAll: () => get<CarTypeResponse[]>(`${CAR_SERVICE_URL}/cars/types`),
+};
+
+export const carBrandApi = {
+  getAll: () => get<CarBrandResponse[]>(`${CAR_SERVICE_URL}/cars/brands`),
 };
 
 // ── BOOKING ENDPOINTS ─────────────────────────────────────────────────────────

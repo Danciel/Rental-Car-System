@@ -1,5 +1,6 @@
 import { Star, Settings, Users } from 'lucide-react';
 import { Car } from '@/app/data/cars';
+import { formatVND } from '@/app/utils/format';
 
 interface CarCardProps {
   car: Car;
@@ -15,6 +16,9 @@ export function CarCard({ car, onBook }: CarCardProps) {
           src={car.image}
           alt={car.name}
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = `https://placehold.co/800x600?text=${encodeURIComponent(car.name)}`;
+          }}
         />
         <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full">
           <span className="text-xs font-semibold" style={{ color: '#1E40AF' }}>
@@ -56,8 +60,8 @@ export function CarCard({ car, onBook }: CarCardProps) {
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-gray-900">${car.pricePerDay}</span>
-              <span className="text-sm text-gray-500">/day</span>
+              <span className="text-2xl font-bold text-gray-900">{formatVND(car.pricePerDay)}</span>
+              <span className="text-sm text-gray-500">/ngày</span>
             </div>
           </div>
           <button

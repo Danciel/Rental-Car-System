@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create # Test environment, use 'update' or 'validate' for production
+      ddl-auto: create-drop # Test environment, use 'update' or 'validate' for production
     show-sql: true
     properties:
       hibernate:

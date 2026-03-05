@@ -390,6 +390,7 @@ public class CarServiceImpl implements CarService{
                     .brandName(car.getCarModel() != null && car.getCarModel().getBrand() != null
                             ? car.getCarModel().getBrand().getName() : null)
                     .images(toImageResponseSet(car.getImages()))
+                    .ownerId(car.getOwnerId())
                     .build();
     }
 
@@ -415,6 +416,9 @@ public class CarServiceImpl implements CarService{
         response.setTransmission(carModel.getTransmission());
         response.setSeats(carModel.getSeats());
         response.setBrandId(carModel.getBrand().getId());
+        response.setBrandName(carModel.getBrand().getName());
+        response.setTypeId(carModel.getType().getId());
+        response.setTypeName(carModel.getType().getTypeName());
         return response;
     }
 
