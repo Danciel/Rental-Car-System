@@ -138,67 +138,47 @@ export default function App() {
 
   const handleStartEarning = useCallback(() => go('list-car'), [go]);
 
-  // ADMIN
+
+    const handleViewCarDetail = useCallback(
+        (carId: number) => {
+            setSelectedCarId(carId);
+            setSelectedCarDetail(null); // reset detail cache
+            go('car-detail', { carId }); // ✅ luôn truyền carId vào options
+        },
+        [go]
+    );
+
+    const handleCheckout = useCallback(
+        (pickupDate: string, returnDate: string, totalDays: number, totalPrice: number) => {
+            if (!selectedCarId) return;
+
+            setBookingData({
+                carId: selectedCarId,
+                pickupDate,
+                returnDate,
+                totalDays,
+                totalPrice,
+            });
+
+            go('checkout');
+        },
+        [selectedCarId, go]
+    );
+
+    // ✅ callback ổn định reference, tránh loop với CarDetailPage
+    const handleLoadedCar = useCallback((car: Car) => {
+        setSelectedCarDetail(car);
+    }, []);
+
+    const handleConfirmBooking = useCallback(async () => {
+        if (!selectedCarDetail || !bookingData) return;
+        go('confirmation');
+    }, [selectedCarDetail, bookingData, go]);
+
+    // ADMIN
   if (currentPage === 'admin') {
     return <Admin onBackToSite={() => go('home', { replace: true })} />;
   }
-
-  const handleViewCarDetail = useCallback(
-      (carId: number) => {
-        setSelectedCarId(carId);
-        setSelectedCarDetail(null); // reset detail cache
-        go('car-detail', { carId }); // ✅ luôn truyền carId vào options
-      },
-      [go]
-  );
-
-  const handleCheckout = useCallback(
-      (pickupDate: string, returnDate: string, totalDays: number, totalPrice: number) => {
-        if (!selectedCarId) return;
-
-        setBookingData({
-          carId: selectedCarId,
-          pickupDate,
-          returnDate,
-          totalDays,
-          totalPrice,
-        });
-
-        go('checkout');
-      },
-      [selectedCarId, go]
-  );
-
-  // ✅ callback ổn định reference, tránh loop với CarDetailPage
-  const handleLoadedCar = useCallback((car: Car) => {
-    setSelectedCarDetail(car);
-  }, []);
-
-  const handleConfirmBooking = useCallback(async () => {
-    if (!selectedCarDetail || !bookingData) return;
-
-    try {
-      const email = localStorage.getItem('USER_EMAIL') ?? '';
-      const userId = JSON.parse(localStorage.getItem('user') ?? '{}').userId ?? 1;
-
-      await bookingApi.requestBooking(
-          {
-            userId,
-            carId: selectedCarDetail.id,
-            startTime: `${bookingData.pickupDate}T10:00:00`,
-            endTime: `${bookingData.returnDate}T10:00:00`,
-            rentalPrice: bookingData.totalPrice,
-            depositAmount: selectedCarDetail.policies?.deposit ?? 0,
-          },
-          email
-      );
-
-      go('confirmation');
-    } catch (error) {
-      console.error(error);
-      alert('Đặt xe thất bại. Vui lòng thử lại.');
-    }
-  }, [selectedCarDetail, bookingData, go]);
 
   return (
       <div className="min-h-screen bg-white">

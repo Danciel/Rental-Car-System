@@ -61,6 +61,32 @@ public class BookingController {
             "Thanh toán thành công! Hợp đồng đã được tạo và xe đã được khóa lịch."));
   }
 
+  // API dành cho Admin / Chủ xe để xem danh sách tất cả các yêu cầu đặt xe
+  @GetMapping("/manage")
+  public ResponseEntity<ApiResponse<List<BookingDetailResponse>>> getAllBookingsForManagement() {
+
+    // Lấy toàn bộ booking, sắp xếp mới nhất lên đầu
+    // (MVP: Tạm thời cho Admin thấy hết. Sau này nếu làm P2P chuẩn, ta sẽ filter theo ownerId)
+    List<Booking> bookings = bookingRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+
+    List<BookingDetailResponse> response = bookings.stream()
+            .map(b -> BookingDetailResponse.builder()
+                    .id(b.getId())
+                    .bookingCode(b.getBookingCode())
+                    .carId(b.getCarId())
+                    .userId(b.getUserId())
+                    .startTime(b.getStartTime())
+                    .endTime(b.getEndTime())
+                    .status(b.getStatus())
+                    .totalPrice(b.getTotalPrice())
+                    .depositAmount(b.getDepositAmount())
+                    .createdAt(b.getCreatedAt())
+                    .build())
+            .collect(Collectors.toList());
+
+    return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách quản lý booking thành công"));
+  }
+
   @GetMapping("/history")
   public ResponseEntity<ApiResponse<List<BookingHistoryItemResponse>>> getBookingHistory(
           @RequestHeader("X-User-Email") String email) {
