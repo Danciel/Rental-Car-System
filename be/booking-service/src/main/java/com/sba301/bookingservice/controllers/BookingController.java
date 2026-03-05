@@ -16,13 +16,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -33,12 +27,29 @@ public class BookingController {
   private final BookingRepository bookingRepository;
   private final UserServiceClient userServiceClient;
 
-  @PostMapping("/book-and-pay")
-  public ResponseEntity<ApiResponse<BookCarAndPayResponse>> bookCarAndDoPayment(
+  // Thay thế @PostMapping("/book-and-pay") cũ bằng cái này
+  @PostMapping("/request")
+  public ResponseEntity<ApiResponse<BookingDetailResponse>> requestBooking(
           @RequestHeader("X-User-Email") String email,
           @Valid @RequestBody BookCarAndPayRequest request) {
-    BookCarAndPayResponse response = bookingOrchestrationService.bookCarAndDoPayment(request, email);
-    return ResponseEntity.ok(ApiResponse.success(response, "Đặt xe và thanh toán thành công"));
+
+    BookingDetailResponse response = bookingOrchestrationService.createBookingRequest(request, email);
+    return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi yêu cầu thuê xe thành công. Vui lòng chờ chủ xe duyệt."));
+  }
+
+  // Thêm API này vào trong BookingController
+  @PatchMapping("/{id}/respond")
+  public ResponseEntity<ApiResponse<String>> respondToBooking(
+          @PathVariable Long id,
+          @RequestParam boolean accept,
+          @RequestHeader("X-User-Email") String email) {
+
+    bookingOrchestrationService.respondToBookingRequest(id, accept, email);
+
+    String message = accept ? "Đã CHẤP NHẬN yêu cầu thuê xe. Khách hàng đang tiến hành thanh toán."
+            : "Đã TỪ CHỐI yêu cầu thuê xe.";
+
+    return ResponseEntity.ok(ApiResponse.success(null, message));
   }
 
   @GetMapping("/history")

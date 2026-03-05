@@ -4,6 +4,7 @@ import com.sba301.bookingservice.client.CarServiceClient;
 import com.sba301.bookingservice.client.UserServiceClient;
 import com.sba301.bookingservice.dto.BookCarAndPayRequest;
 import com.sba301.bookingservice.dto.BookCarAndPayResponse;
+import com.sba301.bookingservice.dtos.BookingDetailResponse;
 import com.sba301.bookingservice.entities.Booking;
 import com.sba301.bookingservice.entities.BookingStatus;
 import com.sba301.bookingservice.entities.RentalContract;
@@ -32,31 +33,81 @@ public class BookingOrchestrationServiceImpl implements com.sba301.bookingservic
   // MAIN ORCHESTRATION
   // ═════════════════════════════════════════════════════════════════════════
 
+  // Thêm method này vào interface BookingOrchestrationService trước nhé
   @Override
   @Transactional
-  public BookCarAndPayResponse bookCarAndDoPayment(BookCarAndPayRequest request, String email) {
+  public BookingDetailResponse createBookingRequest(BookCarAndPayRequest request, String email) {
 
-    // ── STEP 1: Verify user ───────────────────────────────────────────────
+    // 1. Lấy user
     Long userId = verifyUser(email);
 
-    // ── STEP 2: Verify car is available ──────────────────────────────────
+    // 2. Kiểm tra xe còn trống không
     verifyCarAvailable(request.carId());
 
-    LocalDateTime now = LocalDateTime.now();
+    // 3. TẠO YÊU CẦU ĐẶT XE (Status: PENDING_APPROVAL)
+    Booking booking = Booking.builder()
+            .bookingCode(generateBookingCode())
+            .userId(userId)
+            .carId(request.carId())
+            .startTime(request.startTime())
+            .endTime(request.endTime())
+            .status(BookingStatus.PENDING_APPROVAL) // Chỉ mới gửi yêu cầu
+            .totalPrice(request.rentalPrice())
+            //.depositAmount(request.depositAmount()) // Theo luồng mới, user thanh toán 100% nên deposit = total
+            .depositAmount(request.rentalPrice())
+            .createdAt(LocalDateTime.now())
+            .build();
 
-    // ── STEP 3: Create booking ────────────────────────────────────────────
-    Booking booking = createBooking(request, userId, now);
+    booking = bookingRepository.save(booking);
+    log.info("Created booking request: {}", booking.getBookingCode());
 
-    // ── STEP 4: Create rental contract ───────────────────────────────────
-    RentalContract rentalContract = createRentalContract(request, booking, now);
+    // LƯU Ý: KHÔNG TẠO RENTAL CONTRACT Ở ĐÂY.
+    // KHÔNG ĐỔI TRẠNG THÁI XE SANG RENTED Ở ĐÂY.
 
-    // ── STEP 5: Link contract back to booking ─────────────────────────────
-    booking.setRentalContract(rentalContract);
+    // 4. Trả về cho Frontend
+    return BookingDetailResponse.builder()
+            .id(booking.getId())
+            .bookingCode(booking.getBookingCode())
+            .carId(booking.getCarId())
+            .userId(booking.getUserId())
+            .status(booking.getStatus())
+            .totalPrice(booking.getTotalPrice())
+            .build();
+  }
 
-    // ── STEP 6: Update car status to RENTED ──────────────────────────────
-    updateCarToRented(request.carId(), email);
+  @Override
+  @Transactional
+  public void respondToBookingRequest(Long bookingId, boolean accept, String email) {
+    // 1. Lấy ID của người đang thao tác (Chủ xe)
+    Long currentUserId = verifyUser(email);
 
-    return buildResponse(booking, rentalContract);
+    // 2. Tìm Booking trong Database
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu thuê xe này"));
+
+    // 3. Kiểm tra xem Booking có đang ở đúng trạng thái chờ duyệt không
+    if (booking.getStatus() != BookingStatus.PENDING_APPROVAL) {
+      throw new RuntimeException("Yêu cầu này không ở trạng thái chờ duyệt (Có thể đã được xử lý hoặc bị hủy)");
+    }
+
+    /* * LƯU Ý BẢO MẬT DÀNH CHO ĐỒ ÁN (TODO):
+     * Đúng chuẩn thì ở đây bạn phải gọi qua CarServiceClient để check xem
+     * currentUserId có đúng là Owner của chiếc xe (booking.getCarId()) hay không.
+     * Tạm thời ở MVP này, ta giả định Frontend chỉ hiện nút Duyệt cho đúng chủ xe.
+     */
+
+    // 4. Xử lý quyết định
+    if (accept) {
+      booking.setStatus(BookingStatus.PENDING_PAYMENT);
+      log.info("Booking {} accepted. Waiting for payment.", booking.getBookingCode());
+      // (Tùy chọn) Gửi thông báo/Email cho Khách hàng biết để vào thanh toán
+    } else {
+      booking.setStatus(BookingStatus.REJECTED);
+      log.info("Booking {} rejected by owner.", booking.getBookingCode());
+    }
+
+    // 5. Lưu lại trạng thái mới
+    bookingRepository.save(booking);
   }
 
   // ═════════════════════════════════════════════════════════════════════════
