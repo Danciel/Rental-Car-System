@@ -95,6 +95,15 @@ export function CheckoutPage({ car, pickupDate, returnDate, totalDays, totalPric
 
   const images = car.images || [car.image];
 
+  const safeOwner = car.owner || {
+    name: "Chủ xe (Đang cập nhật)",
+    avatar: "https://ui-avatars.com/api/?name=Owner&background=1E40AF&color=fff&size=200",
+    rating: 5.0,
+    responseRate: "100%",
+    responseTime: "Vài phút",
+    joinedDate: "2024"
+  };
+
   return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white border-b sticky top-0 z-10">
@@ -125,7 +134,7 @@ export function CheckoutPage({ car, pickupDate, returnDate, totalDays, totalPric
               </div>
             </div>
 
-            <OwnerProfile owner={car.owner} />
+            <OwnerProfile owner={safeOwner} />
 
             <ReviewsSection
                 carId={car.id}
@@ -149,6 +158,14 @@ export function CheckoutPage({ car, pickupDate, returnDate, totalDays, totalPric
             {totalDays > 0 && (
                 <div className="mt-4 text-lg font-semibold">Total: ${totalPrice}</div>
             )}
+
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800">
+              <strong>Lưu ý quan trọng:</strong>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Bạn vui lòng xuất trình <strong>CCCD/Passport</strong> và <strong>Bằng lái xe bản gốc</strong> cho Chủ xe khi nhận xe.</li>
+                <li>Nền tảng không quản lý người lái thực tế. Người đứng tên đặt xe sẽ chịu hoàn toàn trách nhiệm pháp lý với Chủ xe trong trường hợp xảy ra sự cố.</li>
+              </ul>
+            </div>
 
             {error && (
                 <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">

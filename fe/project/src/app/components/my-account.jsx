@@ -15,23 +15,28 @@ import {
   Shield,
   Phone,
   Mail,
-  CreditCard // Thêm icon CreditCard
+  CreditCard,
+  Briefcase,
+  XCircle
 } from "lucide-react";
 
 export function MyAccount({ onClose }) {
   const [activeSection, setActiveSection] = useState("bookings");
 
+  // --- State cho Khách Hàng (My Trips) ---
   const [history, setHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const [isPaying, setIsPaying] = useState(false);
+
+  // --- State cho Chủ Xe (Host Dashboard) ---
+  const [ownerBookings, setOwnerBookings] = useState([]);
+  const [isLoadingOwner, setIsLoadingOwner] = useState(false);
+
+  // --- State chung ---
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState("");
-
-  // State mới cho nút thanh toán
-  const [isPaying, setIsPaying] = useState(false);
-
-  // --- User profile state (fetch from backend) ---
   const [user, setUser] = useState(null);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [userError, setUserError] = useState("");
@@ -39,14 +44,10 @@ export function MyAccount({ onClose }) {
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoadingUser(true);
-      setUserError("");
       try {
         const res = await userAPI.getMyProfile();
-        // userAPI.getMyProfile returns the full response object; API shape is { data: { ... } }
-        const profile = res && res.data ? res.data : res;
-        setUser(profile);
+        setUser(res && res.data ? res.data : res);
       } catch (err) {
-        console.error("Failed to load profile", err);
         setUserError("Failed to load profile");
       } finally {
         setIsLoadingUser(false);
@@ -56,7 +57,6 @@ export function MyAccount({ onClose }) {
     fetchProfile();
   }, []);
 
-  // If backend doesn't provide avatarUrl, fallback to a generated avatar with user's name
   const avatarSrc = (user) => {
     if (!user)
       return `https://ui-avatars.com/api/?name=User&background=1E40AF&color=fff&size=200`;
@@ -67,13 +67,13 @@ export function MyAccount({ onClose }) {
     )}&background=1E40AF&color=fff&size=200`;
   };
 
-  // Tách hàm fetchHistory ra bằng useCallback để có thể gọi lại sau khi thanh toán xong
+  // ==========================================
+  // FETCH DATA KHÁCH HÀNG (MY TRIPS)
+  // ==========================================
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    setHistoryError("");
     try {
       const data = await bookingApi.getHistory();
-      // Map backend history items into UI booking card format
       const mapped = data.map((item) => ({
         id: item.id,
         car: {
@@ -87,23 +87,57 @@ export function MyAccount({ onClose }) {
         duration: "",
         location: "",
         totalPrice: Number(item.totalPrice),
-        status: item.status.toLowerCase(), // status từ DB sẽ thành pending_approval, pending_payment...
+        status: item.status.toLowerCase(),
         hasReview: false,
       }));
       setHistory(mapped);
     } catch (err) {
-      console.error("Failed to load booking history", err);
       setHistoryError("Failed to load booking history");
     } finally {
       setIsLoadingHistory(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  // ==========================================
+  // FETCH DATA CHỦ XE (HOST DASHBOARD)
+  // ==========================================
+  const fetchOwnerBookings = useCallback(async () => {
+    setIsLoadingOwner(true);
+    try {
+      const token = localStorage.getItem("ACCESS_TOKEN");
+      // GỌI API LẤY DANH SÁCH ĐƠN NGƯỜI KHÁC ĐẶT XE CỦA MÌNH
+      // Giả sử API của bạn là /api/bookings/owner-requests
+      const res = await fetch('http://localhost:8080/api/bookings/manage', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        // Lọc ra các đơn đang chờ duyệt
+        const pendings = json.data.filter(b => b.status === 'PENDING_APPROVAL');
+        const mappedData = pendings.map(b => ({
+          id: b.id,
+          carName: `Xe ID: ${b.carId}`, // Thay bằng tên thật nếu BE có trả về
+          customerName: `Mã đơn: ${b.bookingCode}`, // Thay bằng tên khách nếu BE có trả về
+          startDate: new Date(b.startTime).toLocaleDateString('vi-VN'),
+          endDate: new Date(b.endTime).toLocaleDateString('vi-VN'),
+          totalPrice: b.totalPrice,
+          status: b.status.toLowerCase()
+        }));
+        setOwnerBookings(mappedData);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingOwner(false);
+    }
+  }, []);
 
-  // --- THÊM HÀM XỬ LÝ THANH TOÁN ---
+  useEffect(() => {
+    if (activeSection === "bookings") fetchHistory();
+    if (activeSection === "owner") fetchOwnerBookings();
+  }, [activeSection, fetchHistory, fetchOwnerBookings]);
+
+  // --- LOGIC THANH TOÁN CỦA KHÁCH HÀNG ---
   const handlePayment = async (bookingId) => {
     if (isPaying) return;
     try {
@@ -116,6 +150,25 @@ export function MyAccount({ onClose }) {
       alert(error.message || "Thanh toán thất bại, vui lòng thử lại.");
     } finally {
       setIsPaying(false);
+    }
+  };
+
+  // --- LOGIC DUYỆT/TỪ CHỐI CỦA CHỦ XE ---
+  const handleOwnerRespond = async (bookingId, isAccept) => {
+    try {
+      const token = localStorage.getItem("ACCESS_TOKEN");
+      const res = await fetch(`http://localhost:8080/api/bookings/${bookingId}/respond?accept=${isAccept}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert(isAccept ? "Đã DUYỆT yêu cầu thuê xe!" : "Đã TỪ CHỐI yêu cầu thuê xe!");
+        fetchOwnerBookings(); // Tải lại danh sách đơn của chủ xe
+      } else {
+        alert("Có lỗi xảy ra, vui lòng thử lại.");
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -133,9 +186,11 @@ export function MyAccount({ onClose }) {
     }
   };
 
+  // --- CẤU HÌNH SIDEBAR (Thêm tab Owner) ---
   const sidebarItems = [
     { id: "info", label: "Personal Info", icon: User },
     { id: "bookings", label: "My Trips", icon: Calendar },
+    { id: "owner", label: "Host Dashboard", icon: Briefcase },
     { id: "wallet", label: "My Wallet", icon: Wallet },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -223,56 +278,21 @@ export function MyAccount({ onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>
-                  {booking.startDate} - {booking.endDate}
-                </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span>{booking.duration}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span>{booking.location}</span>
+                  <span>{booking.startDate} - {booking.endDate}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                   <Wallet className="w-4 h-4 text-gray-400" />
                   <span>{formatPrice(booking.totalPrice)}</span>
                 </div>
               </div>
-
-              {/* Action Buttons */}
               <div className="flex gap-3">
-                {booking.status === "completed" && !booking.hasReview && (
-                    <button className="flex items-center gap-2 px-4 py-2 bg-[#F97316] text-white rounded-xl hover:bg-[#ea6a0a] transition-colors text-sm font-semibold">
-                      <Star className="w-4 h-4" />
-                      Write a review
-                    </button>
-                )}
-                {booking.status === "in-progress" && (
-                    <button className="flex items-center gap-2 px-4 py-2 bg-[#1E40AF] text-white rounded-xl hover:bg-[#1a3699] transition-colors text-sm font-semibold">
-                      Contact the host
-                    </button>
-                )}
-
-                {/* --- NÚT PAY NOW HIỆN RA KHI ĐANG Ở TRẠNG THÁI CHỜ THANH TOÁN --- */}
                 {booking.status === "pending_payment" && (
-                    <button
-                        onClick={() => handlePayment(booking.id)}
-                        disabled={isPaying}
-                        className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm font-semibold disabled:opacity-50"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      {isPaying ? "Processing..." : "Pay Now"}
+                    <button onClick={() => handlePayment(booking.id)} disabled={isPaying} className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm font-semibold">
+                      <CreditCard className="w-4 h-4" /> {isPaying ? "Processing..." : "Pay Now"}
                     </button>
                 )}
-
-                <button
-                    onClick={() => handleViewDetails(booking.id)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700"
-                >
-                  View details
-                  <ChevronRight className="w-4 h-4" />
+                <button onClick={() => handleViewDetails(booking.id)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700">
+                  View details <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -280,6 +300,45 @@ export function MyAccount({ onClose }) {
         </div>
     );
   };
+
+  // Render Card cho Host Dashboard (Chủ xe duyệt đơn)
+  const renderOwnerCard = (request) => (
+      <div key={request.id} className="bg-white border border-blue-200 rounded-xl p-6 hover:shadow-lg transition-shadow shadow-sm">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg">{request.carName}</h3>
+            <p className="text-sm text-gray-600 font-medium">Khách hàng: <span className="text-blue-600">{request.customerName}</span></p>
+          </div>
+          <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">
+          Cần bạn duyệt
+        </span>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-6 text-sm bg-gray-50 p-4 rounded-lg">
+          <div>
+            <p className="text-gray-500 mb-1">Thời gian thuê</p>
+            <p className="font-semibold text-gray-900">{request.startDate} - {request.endDate}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 mb-1">Dự kiến thu về</p>
+            <p className="font-bold text-green-600 text-base">{formatPrice(request.totalPrice)}</p>
+          </div>
+        </div>
+        <div className="flex gap-3 justify-end">
+          <button
+              onClick={() => handleOwnerRespond(request.id, false)}
+              className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-bold flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" /> Từ chối
+          </button>
+          <button
+              onClick={() => handleOwnerRespond(request.id, true)}
+              className="px-6 py-2.5 bg-[#1E40AF] text-white rounded-xl hover:bg-blue-800 transition-colors text-sm font-bold flex items-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" /> Chấp nhận cho thuê
+          </button>
+        </div>
+      </div>
+  );
 
   return (
       <div className="min-h-screen bg-gray-50 flex">
@@ -348,58 +407,13 @@ export function MyAccount({ onClose }) {
 
                 {/* User Info */}
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {isLoadingUser
-                          ? "Loading..."
-                          : user?.fullName || "Guest User"}
-                    </h2>
-                    {user?.licenseVerified && (
-                        <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                      <Shield className="w-4 h-4" />
-                      Verified
-                    </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      <span>{user?.email || "-"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      <span>{user?.phoneNumber || "-"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="hidden lg:flex gap-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {history.length || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Trips</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {user?.walletBalance
-                          ? new Intl.NumberFormat("vi-VN").format(
-                          user.walletBalance
-                      ) + "đ"
-                          : "0đ"}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        Wallet
-                      </div>
-                    </div>
+                  <h2 className="text-2xl font-bold text-gray-900">{isLoadingUser ? "Loading..." : user?.fullName || "Guest User"}</h2>
+                  <div className="flex flex-col gap-1 text-sm text-gray-600 mt-2">
+                    <div className="flex items-center gap-2"><Mail className="w-4 h-4" /><span>{user?.email || "-"}</span></div>
+                    <div className="flex items-center gap-2"><Phone className="w-4 h-4" /><span>{user?.phoneNumber || "-"}</span></div>
                   </div>
                 </div>
               </div>
-
-              {userError && <div className="mt-4 text-red-600">{userError}</div>}
             </div>
 
             {/* Booking Section */}
@@ -412,118 +426,36 @@ export function MyAccount({ onClose }) {
                   {/* History Only */}
                   <div className="space-y-4">
                     {!isLoadingHistory && history.map(renderBookingCard)}
-
-                    {isLoadingHistory && (
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-gray-600">
-                          Loading booking history...
-                        </div>
-                    )}
-
-                    {historyError && (
-                        <div className="bg-white border border-red-200 rounded-xl p-6 text-center text-red-600">
-                          {historyError}
-                        </div>
-                    )}
-
-                    {/* Empty State */}
-                    {!isLoadingHistory && history.length === 0 && !historyError && (
+                    {isLoadingHistory && <div className="p-6 text-center text-gray-500">Loading trips...</div>}
+                    {!isLoadingHistory && history.length === 0 && (
                         <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-                          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            No trips yet
-                          </h3>
-                          <p className="text-gray-600 mb-6">
-                            You don't have any trip history yet
-                          </p>
-                          <button onClick={onClose} className="px-6 py-3 bg-[#1E40AF] text-white rounded-xl hover:bg-[#1a3699] transition-colors font-semibold">
-                            Search cars now
-                          </button>
+                          <p className="text-gray-600">Bạn chưa có chuyến đi nào.</p>
                         </div>
                     )}
                   </div>
                 </>
             )}
 
-            {/* Other Sections Placeholder */}
-            {activeSection !== "bookings" && (
-                <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {activeSection === "info" && (
-                        <User className="w-8 h-8 text-gray-400" />
-                    )}
-                    {activeSection === "wallet" && (
-                        <Wallet className="w-8 h-8 text-gray-400" />
-                    )}
-                    {activeSection === "settings" && (
-                        <Settings className="w-8 h-8 text-gray-400" />
+            {/* TAB HOST DASHBOARD (CHỦ XE) */}
+            {activeSection === "owner" && (
+                <>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Host Dashboard</h2>
+                  <div className="space-y-4">
+                    {!isLoadingOwner && ownerBookings.map(renderOwnerCard)}
+                    {isLoadingOwner && <div className="p-6 text-center text-gray-500">Loading requests...</div>}
+                    {!isLoadingOwner && ownerBookings.length === 0 && (
+                        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                          <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có yêu cầu thuê xe</h3>
+                          <p className="text-gray-600">Khi có người đặt xe của bạn, yêu cầu sẽ hiện ở đây.</p>
+                        </div>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {activeSection === "info" && "Personal Information"}
-                    {activeSection === "wallet" && "My Wallet"}
-                    {activeSection === "settings" && "Settings"}
-                  </h3>
-                  <p className="text-gray-600">This feature is under development</p>
-                </div>
+                </>
             )}
+
           </div>
         </div>
-
-        {selectedBooking && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Booking details
-                </h3>
-
-                {isLoadingDetail ? (
-                    <p className="text-gray-600">Loading...</p>
-                ) : detailError ? (
-                    <p className="text-red-600">{detailError}</p>
-                ) : (
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <p>
-                        <span className="font-semibold">Booking code:</span>{" "}
-                        {selectedBooking.bookingCode}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Car ID:</span>{" "}
-                        {selectedBooking.carId}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Start:</span>{" "}
-                        {new Date(selectedBooking.startTime).toLocaleString("vi-VN")}
-                      </p>
-                      <p>
-                        <span className="font-semibold">End:</span>{" "}
-                        {new Date(selectedBooking.endTime).toLocaleString("vi-VN")}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Total price:</span>{" "}
-                        {formatPrice(selectedBooking.totalPrice)}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Deposit:</span>{" "}
-                        {formatPrice(selectedBooking.depositAmount)}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Status:</span>{" "}
-                        {selectedBooking.status}
-                      </p>
-                    </div>
-                )}
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                      onClick={() => setSelectedBooking(null)}
-                      className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-semibold"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-        )}
       </div>
   );
 }

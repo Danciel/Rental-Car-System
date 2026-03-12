@@ -3,15 +3,12 @@ package com.swb.userservice.services;
 import com.swb.common.exception.AppException;
 import com.swb.userservice.dtos.LoginRequest;
 import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.request.UpdateLicenseRequest;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
-import com.swb.userservice.entities.DriverLicense;
 import com.swb.userservice.entities.Role;
 import com.swb.userservice.entities.User;
 import com.swb.userservice.dtos.RegisterRequest;
 import com.swb.userservice.dtos.UserProfileResponse;
 import com.swb.userservice.enums.ERole;
-import com.swb.userservice.enums.KYCStatus;
 import com.swb.userservice.enums.UserStatus;
 import com.swb.userservice.repositories.RoleRepository;
 import com.swb.userservice.repositories.UserRepository;
@@ -20,7 +17,6 @@ import com.swb.userservice.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +34,14 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<UserProfileResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional
@@ -59,7 +63,6 @@ public class UserServiceImpl implements UserService {
                 .fullName(request.getFullName())
                 .walletBalance(BigDecimal.ZERO)
                 .status(UserStatus.ACTIVE)
-                .isLicenseVerified(false)
                 .roles(roles)
                 .build();
 
@@ -92,7 +95,6 @@ public class UserServiceImpl implements UserService {
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
                 .roles(user.getRoles().stream().map(role -> role.getName().name()).collect(Collectors.toSet()))
-                .isLicenseVerified(user.getIsLicenseVerified())
                 .build();
 
         return LoginResponse.builder()
@@ -129,7 +131,6 @@ public class UserServiceImpl implements UserService {
                 .roles(user.getRoles().stream()
                         .map(role -> role.getName().name())
                         .collect(java.util.stream.Collectors.toSet()))
-                .isLicenseVerified(user.getIsLicenseVerified())
                 .build();
     }
 
@@ -153,42 +154,7 @@ public class UserServiceImpl implements UserService {
         return getMyProfile(email);
     }
 
-    @Override
-    @Transactional
-    public UserProfileResponse submitDriverLicense(String email, UpdateLicenseRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
-
-        // 1. Tạo hoặc cập nhật thông tin Bằng lái
-        DriverLicense license = user.getDriverLicense();
-        if (license == null) {
-            license = new DriverLicense();
-            license.setUser(user);
-        }
-
-        license.setLicenseNumber(request.getLicenseNumber());
-        license.setImageFrontUrl(request.getFrontImageUrl());
-        license.setImageBackUrl(request.getBackImageUrl());
-
-        // Test only
-        // TODO: Admin sẽ xem ảnh và nhập thủ công, có thể có AI OCR đọc thẳng và tự động điền và admin xác nhận lại
-        license.setLicenseClass("B1");
-        license.setExpiryDate(java.time.LocalDate.now().plusYears(5));
-
-        user.setDriverLicense(license);
-
-        // 2. Chuyển trạng thái xác minh KYC sang Chờ Duyệt
-        user.setKycStatus(com.swb.userservice.enums.KYCStatus.PENDING);
-
-        userRepository.save(user);
-
-        return getMyProfile(email);
-    }
-
     private UserProfileResponse mapToResponse(User user) {
-        boolean licenseVerified = user.getDriverLicense() != null
-                && user.getDriverLicense().getVerificationStatus() == KYCStatus.VERIFIED;
-
         Set<String> roleNames = user.getRoles().stream()
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet());
@@ -203,7 +169,6 @@ public class UserServiceImpl implements UserService {
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
                 .roles(roleNames)
-                .isLicenseVerified(licenseVerified)
                 .build();
     }
 }

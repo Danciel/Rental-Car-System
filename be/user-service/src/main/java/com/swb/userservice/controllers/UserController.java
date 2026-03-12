@@ -5,7 +5,6 @@ import com.swb.userservice.dtos.LoginRequest;
 import com.swb.userservice.dtos.LoginResponse;
 import com.swb.userservice.dtos.RegisterRequest;
 import com.swb.userservice.dtos.UserProfileResponse;
-import com.swb.userservice.dtos.request.UpdateLicenseRequest;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.services.UserService;
 import jakarta.validation.Valid;
@@ -14,12 +13,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UserProfileResponse>>> getAllUsers() {
+        List<UserProfileResponse> users = userService.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.success(users, "Lấy danh sách người dùng thành công"));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserProfileResponse>> register(
@@ -58,15 +65,6 @@ public class UserController {
 
         UserProfileResponse updatedProfile = userService.updateMyProfile(email, request);
         return ResponseEntity.ok(ApiResponse.success(updatedProfile, "Cập nhật thông tin thành công"));
-    }
-
-    @PutMapping("/me/license")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> submitDriverLicense(
-            @RequestHeader("X-User-Email") String email,
-            @Valid @RequestBody UpdateLicenseRequest request) {
-
-        UserProfileResponse updatedProfile = userService.submitDriverLicense(email, request);
-        return ResponseEntity.ok(ApiResponse.success(updatedProfile, "Đã nộp bằng lái xe, vui lòng chờ duyệt"));
     }
 
     @GetMapping("/{id}")

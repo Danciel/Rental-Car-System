@@ -19,5 +19,4 @@ public class UserProfileResponse {
     private BigDecimal walletBalance;
     private String status;
     private Set<String> roles;
-    private boolean isLicenseVerified;
 }
