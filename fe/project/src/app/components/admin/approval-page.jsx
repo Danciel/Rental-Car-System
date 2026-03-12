@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
-import { CheckCircle, XCircle, Search, Clock, ShieldCheck, Car, Eye, CalendarClock } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Clock, Car, Eye, CalendarClock } from 'lucide-react';
 import { RejectModal, DetailViewModal } from './approval-overlay';
 
 export function ApprovalsPage() {
@@ -13,12 +13,7 @@ export function ApprovalsPage() {
   const [bookingApprovals, setBookingApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock Data cũ của bạn (Giữ nguyên)
-  const userApprovals = [
-    { id: 'U1', user: 'Nguyễn Văn A', type: 'Xác minh CCCD', date: '2024-05-15', status: 'pending' },
-    { id: 'U2', user: 'Lê Thị B', type: 'Bằng lái xe B2', date: '2024-05-16', status: 'pending' }
-  ];
-
+  // Mock Data cho Car Registration
   const carApprovals = [
     { id: 'C1', user: 'Trần Minh C', carName: 'VinFast VF8', plate: '51G-123.45', date: '2024-05-14', status: 'pending' },
     { id: 'C2', user: 'Hoàng Văn D', carName: 'Toyota Camry', plate: '30H-999.99', date: '2024-05-17', status: 'pending' }
@@ -35,8 +30,7 @@ export function ApprovalsPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await res.json();
-      if (res.ok) {
-        // Chỉ lấy những Booking đang ở trạng thái chờ duyệt
+      if (res.ok && json.data) {
         const pendings = json.data.filter(b => b.status === 'PENDING_APPROVAL');
         // Map lại dữ liệu cho khớp với cấu trúc bảng của bạn
         const mappedData = pendings.map(b => ({
@@ -75,16 +69,9 @@ export function ApprovalsPage() {
 
         if (res.ok) {
           alert("Đã DUYỆT yêu cầu thuê xe thành công!");
-          fetchBookings(); // Tải lại danh sách
-        } else {
-          const errData = await res.json();
-          alert(errData.message || "Có lỗi xảy ra");
+          fetchBookings();
         }
-      } catch (error) {
-        console.error(error);
-      }
-    } else {
-      console.log(`Approved mock data: ${req.id}`);
+      } catch (error) { console.error(error); }
     }
   };
 
@@ -103,30 +90,12 @@ export function ApprovalsPage() {
           alert("Đã TỪ CHỐI yêu cầu thuê xe.");
           fetchBookings(); // Tải lại danh sách
         }
-      } catch (error) {
-        console.error(error);
-      }
-    } else {
-      console.log(`Rejected ${selectedRequest.id} with reason: ${reason}`);
+      } catch (error) { console.error(error); }
     }
     setIsRejectModalOpen(false);
   };
-  // ==========================================
 
-  const handleRejectClick = (request) => {
-    setSelectedRequest(request);
-    setIsRejectModalOpen(true);
-  };
-
-  const handleViewDetail = (request) => {
-    setSelectedRequest(request);
-    setIsDetailOpen(true);
-  };
-
-  // Quyết định xem đang hiển thị mảng dữ liệu nào
-  const currentData = activeTab === 'user' ? userApprovals :
-      activeTab === 'car' ? carApprovals :
-          bookingApprovals;
+  const currentData = activeTab === 'car' ? carApprovals : bookingApprovals;
 
   return (
       <div className="space-y-6">
@@ -144,12 +113,6 @@ export function ApprovalsPage() {
               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'booking' ? 'bg-white text-[#1E40AF] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <CalendarClock className="w-4 h-4" /> Booking Requests
-          </button>
-          <button
-              onClick={() => setActiveTab('user')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'user' ? 'bg-white text-[#1E40AF] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            <ShieldCheck className="w-4 h-4" /> User Verification
           </button>
           <button
               onClick={() => setActiveTab('car')}
@@ -180,8 +143,7 @@ export function ApprovalsPage() {
                     <div className="flex flex-col">
                       <span className="font-bold text-gray-900">{req.user}</span>
                       <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md w-fit mt-1">
-                      {activeTab === 'user' ? req.type :
-                          activeTab === 'car' ? req.carName : req.type}
+                      {activeTab === 'car' ? req.carName : req.type}
                     </span>
                     </div>
                   </td>
@@ -192,10 +154,10 @@ export function ApprovalsPage() {
                   </td>
                   <td className="py-5 px-6">
                     <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => handleViewDetail(req)} className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors" title="Quick View">
+                      <button onClick={() => { setSelectedRequest(req); setIsDetailOpen(true); }} className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors" title="Quick View">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleRejectClick(req)} className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-1.5">
+                      <button onClick={() => { setSelectedRequest(req); setIsRejectModalOpen(true); }} className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-1.5">
                         <XCircle className="w-4 h-4" /> Reject
                       </button>
                       <button onClick={() => handleApprove(req)} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
@@ -210,19 +172,8 @@ export function ApprovalsPage() {
         </Card>
 
         {/* Modals */}
-        <DetailViewModal
-            isOpen={isDetailOpen}
-            onClose={() => setIsDetailOpen(false)}
-            data={selectedRequest}
-            type={activeTab}
-        />
-        <RejectModal
-            isOpen={isRejectModalOpen}
-            onClose={() => setIsRejectModalOpen(false)}
-            onConfirm={confirmReject}
-            title={activeTab === 'user' ? selectedRequest?.user :
-                activeTab === 'car' ? selectedRequest?.carName : selectedRequest?.user}
-        />
+        <DetailViewModal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} data={selectedRequest} type={activeTab} />
+        <RejectModal isOpen={isRejectModalOpen} onClose={() => setIsRejectModalOpen(false)} onConfirm={confirmReject} title={activeTab === 'car' ? selectedRequest?.carName : selectedRequest?.user} />
       </div>
   );
 }
