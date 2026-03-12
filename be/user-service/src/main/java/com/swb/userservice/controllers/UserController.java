@@ -1,6 +1,7 @@
 package com.swb.userservice.controllers;
 
 import com.swb.common.dtos.ApiResponse;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
 import com.swb.userservice.dtos.request.LoginRequest;
 import com.swb.userservice.dtos.response.LoginResponse;
 import com.swb.userservice.dtos.response.RegisterRequest;
@@ -73,5 +74,26 @@ public class UserController {
 
         return ResponseEntity
                 .ok(ApiResponse.success(responseData, "Lấy thông tin thành công"));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestHeader("X-User-Email") String email,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(email, request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đổi mật khẩu thành công"));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> requestAccountDeletion(
+            @RequestHeader("X-User-Email") String email) {
+        userService.requestAccountDeletion(email);
+        return ResponseEntity.ok(ApiResponse.success(null, "Yêu cầu xóa tài khoản đã được ghi nhận"));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam("token") String token) {
+        userService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xác thực email thành công. Tài khoản đã được kích hoạt."));
     }
 }

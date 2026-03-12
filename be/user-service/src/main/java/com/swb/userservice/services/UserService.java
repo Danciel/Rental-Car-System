@@ -1,5 +1,6 @@
 package com.swb.userservice.services;
 
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
 import com.swb.userservice.dtos.request.LoginRequest;
 import com.swb.userservice.dtos.response.LoginResponse;
 import com.swb.userservice.dtos.response.RegisterRequest;
@@ -20,4 +21,10 @@ public interface UserService {
     UserProfileResponse getMyProfile(String email);
 
     UserProfileResponse updateMyProfile(String email, UpdateProfileRequest request);
+
+    void changePassword(String email, ChangePasswordRequest request);
+
+    void requestAccountDeletion(String email);
+
+    void verifyEmail(String token);
 }
