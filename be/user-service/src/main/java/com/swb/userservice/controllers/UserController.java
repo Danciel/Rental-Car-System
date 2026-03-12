@@ -96,4 +96,11 @@ public class UserController {
         userService.verifyEmail(token);
         return ResponseEntity.ok(ApiResponse.success(null, "Xác thực email thành công. Tài khoản đã được kích hoạt."));
     }
+
+    @PostMapping("/me/resend-verification")
+    public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(
+            @RequestHeader("X-User-Email") String email) {
+        userService.resendVerificationEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(null, "Email xác thực đã được gửi lại. Vui lòng kiểm tra hòm thư."));
+    }
 }

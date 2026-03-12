@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Eye, EyeOff, Mail, Lock, User, Phone} from 'lucide-react';
+import {Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle} from 'lucide-react';
 import {authAPI} from '../api/auth';
 
 export function LoginSignup({onClose}) {
@@ -7,6 +7,7 @@ export function LoginSignup({onClose}) {
     const [errorMsg, setErrorMsg] = useState('');
     const [activeTab, setActiveTab] = useState('login');
     const [showPassword, setShowPassword] = useState(false);
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -29,20 +30,15 @@ export function LoginSignup({onClose}) {
 
         try {
             if (activeTab === 'login') {
-                // GỌI API ĐĂNG NHẬP
                 const res = await authAPI.login(formData.email, formData.password);
-
-                // Lưu token vào localStorage
                 localStorage.setItem("ACCESS_TOKEN", res.data.accessToken);
                 localStorage.setItem("USER_EMAIL", formData.email);
-
                 window.location.href = '/';
             } else {
-                // GỌI API ĐĂNG KÝ
                 await authAPI.register({
                     email: formData.email,
                     password: formData.password,
-                    fullName: formData.name, // Map cho đúng với DTO Backend
+                    fullName: formData.name,
                     phoneNumber: formData.phone
                 });
 
@@ -50,10 +46,9 @@ export function LoginSignup({onClose}) {
                 localStorage.setItem("ACCESS_TOKEN", loginRes.data.accessToken);
                 localStorage.setItem("USER_EMAIL", formData.email);
 
-                window.location.href = '/';
+                setShowSuccessPopup(true);
             }
         } catch (error) {
-            // Bắt lỗi từ Backend và hiển thị ra UI
             setErrorMsg(error.message || 'An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
@@ -61,8 +56,27 @@ export function LoginSignup({onClose}) {
     };
 
     return (
-        // Use viewport height; avoid page scroll
-        <div className="h-dvh w-full overflow-hidden flex">
+        <div className="h-dvh w-full overflow-hidden flex relative">
+            {showSuccessPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center transform transition-all animate-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                            <CheckCircle className="w-10 h-10 text-emerald-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+                        <p className="text-gray-600 mb-8">
+                            Hệ thống đã gửi một email xác thực đến <span className="font-semibold text-gray-900">{formData.email}</span>. Please check your inbox.
+                        </p>
+                        <button
+                            onClick={() => window.location.href = '/account'}
+                            className="w-full py-3.5 bg-[#1E40AF] text-white rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20"
+                        >
+                            Go to Profile
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Left Side */}
             <div className="hidden lg:flex lg:w-1/2 relative h-dvh">
                 <img

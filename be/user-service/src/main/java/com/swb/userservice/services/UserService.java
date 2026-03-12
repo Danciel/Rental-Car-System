@@ -27,4 +27,6 @@ public interface UserService {
     void requestAccountDeletion(String email);
 
     void verifyEmail(String token);
+
+    void resendVerificationEmail(String email);
 }

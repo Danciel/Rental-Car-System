@@ -36,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,17 +60,23 @@ public class UserServiceImpl implements UserService {
         Set<Role> roles = new HashSet<>();
         roles.add(customerRole);
 
+        String token = java.util.UUID.randomUUID().toString();
+
         User newUser = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
                 .walletBalance(BigDecimal.ZERO)
                 .status(UserStatus.INACTIVE)
+                .verificationToken(token)
                 .roles(roles)
                 .build();
 
         User savedUser = userRepository.save(newUser);
         log.info("Đăng ký thành công user id: {}", savedUser.getId());
+
+        emailService.sendVerificationEmail(newUser.getEmail(), token);
 
         return mapToResponse(savedUser);
     }
@@ -84,8 +91,11 @@ public class UserServiceImpl implements UserService {
             throw new AppException(HttpStatus.BAD_REQUEST, "Email hoặc mật khẩu không chính xác");
         }
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa.");
+        }
+        if (user.getStatus() == UserStatus.PENDING_DELETION) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản đang trong quá trình xóa.");
         }
 
         String token = jwtTokenProvider.generateToken(user);
@@ -142,11 +152,12 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 
-        user.setFullName(request.getFullName());
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
         if (request.getPhone() != null) {
             user.setPhoneNumber(request.getPhone());
         }
-
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
         }
@@ -189,15 +200,30 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void verifyEmail(String token) {
-        // Giả sử bạn lưu token trong DB hoặc giải mã token JWT
-        // Ở đây viết logic tìm user theo token (Ví dụ minh họa)
-//        User user = userRepository.findByVerificationToken(token)
-//                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Token không hợp lệ hoặc đã hết hạn"));
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Token không hợp lệ hoặc tài khoản đã được xác thực!"));
 
-//        user.setStatus(UserStatus.ACTIVE);
-        // user.setVerificationToken(null); // Xóa token sau khi dùng xong
-    return;
-//        userRepository.save(user);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setVerificationToken(null);
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản của bạn đã được xác thực trước đó rồi.");
+        }
+
+        String newToken = java.util.UUID.randomUUID().toString();
+        user.setVerificationToken(newToken);
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), newToken);
     }
 
     private UserProfileResponse mapToResponse(User user) {
