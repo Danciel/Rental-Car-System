@@ -85,4 +85,32 @@ public class UserServiceClient {
             return null;
         }
     }
+
+    public Long getOwnerIdByEmail(String ownerEmail) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-User-Email", ownerEmail);
+
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            Map<String, Object> response = restTemplate.exchange(
+                    userServiceUrl + "/api/users/me",
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    Map.class
+            ).getBody();
+
+            if (response == null) return null;
+
+            Map<String, Object> data = (Map<String, Object>) response.get("data");
+            if (data == null) return null;
+
+            Object id = data.get("id");
+            return id != null ? Long.valueOf(id.toString()) : null;
+
+        } catch (Exception e) {
+            log.warn("Could not resolve owner id for email {}: {}", ownerEmail, e.getMessage());
+            return null;
+        }
+    }
 }

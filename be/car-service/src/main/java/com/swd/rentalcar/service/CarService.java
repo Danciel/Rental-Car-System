@@ -80,4 +80,15 @@ public interface CarService {
     CarResponse updateCarStatus(Long id, CarStatus status);
 
     void deleteCar(Long id);
+
+    // ── CAR REGISTRATION ──────────────────────────────────────────────────────
+
+    // Owner submits car for review
+    CarResponse registerCar(CarRequest request, String ownerEmail);
+
+    // Staff approves or rejects submitted car
+    CarResponse reviewCar(Long id, ApprovalStatus decision, String staffEmail);
+
+    // Get all cars pending staff review
+    List<CarResponse> getPendingReviewCars();
 }

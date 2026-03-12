@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface CarRepository extends JpaRepository<Car, Long> {
     boolean existsByLicensePlate(@NotBlank(message = "License plate is required") String licensePlate);
 
+    boolean existsByLicensePlateAndStatusNot(String licensePlate, CarStatus status);
+
     List<Car> findByStatus(CarStatus status);
 
     List<Car> findByCarModelId(Long carModelId);

@@ -187,7 +187,7 @@ public class CarServiceImpl implements CarService{
     @Override
     @Transactional
     public CarResponse createCar(CarRequest request) {
-        if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
+        if (carRepository.existsByLicensePlateAndStatusNot(request.getLicensePlate(), CarStatus.BANNED)) {
             throw new IllegalArgumentException("Biển số xe đã tồn tại: " + request.getLicensePlate());
         }
 
@@ -296,6 +296,66 @@ public class CarServiceImpl implements CarService{
     @Override
     public void deleteCar(Long id) {
         carRepository.delete(findCarById(id));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // CAR REGISTRATION
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Override
+    @Transactional
+    public CarResponse registerCar(CarRequest request, String ownerEmail) {
+        // Resolve ownerId from email via user-service
+        Long ownerId = userServiceClient.getOwnerIdByEmail(ownerEmail);
+        if (ownerId == null) {
+            throw new EntityNotFoundException("Không tìm thấy chủ xe");
+        }
+
+        if (carRepository.existsByLicensePlateAndStatusNot(request.getLicensePlate(), CarStatus.BANNED)) {
+            throw new IllegalArgumentException("Biển số xe đã tồn tại: " + request.getLicensePlate());
+        }
+
+        CarModel carModel = findModelById(request.getCarModelId());
+
+        Car car = new Car();
+        car.setLicensePlate(request.getLicensePlate());
+        car.setBasePricePerDay(request.getBasePricePerDay());
+        car.setDepositAmount(request.getDepositAmount());
+        car.setStatus(CarStatus.STOPPED);   // ← submitted but not yet approved
+        car.setCarModel(carModel);
+        car.setImages(new HashSet<>());
+        car.setOwnerId(ownerId);
+
+        if (request.getImages() != null) {
+            request.getImages().forEach(imgRequest ->
+                    car.addCarImage(buildCarImage(imgRequest, car)));
+        }
+
+        return toResponse(carRepository.save(car));
+    }
+
+    @Override
+    public CarResponse reviewCar(Long id, ApprovalStatus decision, String staffEmail) {
+        Car car = findCarById(id);
+
+        // Only cars pending review (STOPPED) can be reviewed
+        if (car.getStatus() != CarStatus.STOPPED) {
+            throw new IllegalStateException("Xe không ở trạng thái chờ duyệt");
+        }
+
+        // Reuse existing updateCarStatus logic
+        CarStatus newStatus = switch (decision) {
+            case APPROVED -> CarStatus.AVAILABLE;   // ← approved: publish listing
+            case REJECTED -> CarStatus.BANNED;      // ← rejected: block the car
+            default -> throw new IllegalArgumentException("Quyết định không hợp lệ: " + decision);
+        };
+
+        return updateCarStatus(id, newStatus);      // ← reuse existing method
+    }
+
+    @Override
+    public List<CarResponse> getPendingReviewCars() {
+        return getCarsByStatus(CarStatus.STOPPED);  // ← reuse existing method
     }
 
     // ═════════════════════════════════════════════════════════════════════════
