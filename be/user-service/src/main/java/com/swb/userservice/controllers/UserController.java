@@ -1,10 +1,10 @@
 package com.swb.userservice.controllers;
 
 import com.swb.common.dtos.ApiResponse;
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.services.UserService;
 import jakarta.validation.Valid;

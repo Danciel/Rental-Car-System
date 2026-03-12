@@ -1,13 +1,13 @@
 package com.swb.userservice.services;
 
 import com.swb.common.exception.AppException;
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.entities.Role;
 import com.swb.userservice.entities.User;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.enums.ERole;
 import com.swb.userservice.enums.UserStatus;
 import com.swb.userservice.repositories.RoleRepository;
