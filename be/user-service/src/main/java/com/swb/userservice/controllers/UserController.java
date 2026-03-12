@@ -1,10 +1,11 @@
 package com.swb.userservice.controllers;
 
 import com.swb.common.dtos.ApiResponse;
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.services.UserService;
 import jakarta.validation.Valid;
@@ -73,5 +74,33 @@ public class UserController {
 
         return ResponseEntity
                 .ok(ApiResponse.success(responseData, "Lấy thông tin thành công"));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestHeader("X-User-Email") String email,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(email, request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đổi mật khẩu thành công"));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> requestAccountDeletion(
+            @RequestHeader("X-User-Email") String email) {
+        userService.requestAccountDeletion(email);
+        return ResponseEntity.ok(ApiResponse.success(null, "Yêu cầu xóa tài khoản đã được ghi nhận"));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam("token") String token) {
+        userService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xác thực email thành công. Tài khoản đã được kích hoạt."));
+    }
+
+    @PostMapping("/me/resend-verification")
+    public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(
+            @RequestHeader("X-User-Email") String email) {
+        userService.resendVerificationEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(null, "Email xác thực đã được gửi lại. Vui lòng kiểm tra hòm thư."));
     }
 }

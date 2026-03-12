@@ -14,8 +14,11 @@ import com.sba301.bookingservice.repositories.RentalContractRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.swb.common.exception.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,13 @@ public class BookingOrchestrationServiceImpl implements com.sba301.bookingservic
   @Override
   @Transactional
   public BookingDetailResponse createBookingRequest(BookCarAndPayRequest request, String email) {
+
+    //Xác thực trạng thái người dùng (phải ACTIVE mới được đặt xe)
+    String userStatus = userServiceClient.getUserStatus(email);
+
+    if ("INACTIVE".equals(userStatus)) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Vui lòng xác thực Email trước khi đặt xe!");
+    }
 
     // 1. Lấy user
     Long userId = verifyUser(email);

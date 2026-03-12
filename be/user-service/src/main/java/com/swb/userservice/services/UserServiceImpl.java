@@ -1,13 +1,14 @@
 package com.swb.userservice.services;
 
 import com.swb.common.exception.AppException;
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 import com.swb.userservice.entities.Role;
 import com.swb.userservice.entities.User;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.enums.ERole;
 import com.swb.userservice.enums.UserStatus;
 import com.swb.userservice.repositories.RoleRepository;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,17 +60,23 @@ public class UserServiceImpl implements UserService {
         Set<Role> roles = new HashSet<>();
         roles.add(customerRole);
 
+        String token = java.util.UUID.randomUUID().toString();
+
         User newUser = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
                 .walletBalance(BigDecimal.ZERO)
-                .status(UserStatus.ACTIVE)
+                .status(UserStatus.INACTIVE)
+                .verificationToken(token)
                 .roles(roles)
                 .build();
 
         User savedUser = userRepository.save(newUser);
         log.info("Đăng ký thành công user id: {}", savedUser.getId());
+
+        emailService.sendVerificationEmail(newUser.getEmail(), token);
 
         return mapToResponse(savedUser);
     }
@@ -82,8 +91,11 @@ public class UserServiceImpl implements UserService {
             throw new AppException(HttpStatus.BAD_REQUEST, "Email hoặc mật khẩu không chính xác");
         }
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa.");
+        }
+        if (user.getStatus() == UserStatus.PENDING_DELETION) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản đang trong quá trình xóa.");
         }
 
         String token = jwtTokenProvider.generateToken(user);
@@ -140,11 +152,12 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 
-        user.setFullName(request.getFullName());
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
         if (request.getPhone() != null) {
             user.setPhoneNumber(request.getPhone());
         }
-
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
         }
@@ -152,6 +165,65 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return getMyProfile(email);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Mật khẩu cũ không chính xác");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void requestAccountDeletion(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản đang bị khóa, không thể thực hiện thao tác này");
+        }
+
+        user.setStatus(UserStatus.PENDING_DELETION);
+        user.setDeletionRequestedAt(LocalDateTime.now());
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Token không hợp lệ hoặc tài khoản đã được xác thực!"));
+
+        user.setStatus(UserStatus.ACTIVE);
+        user.setVerificationToken(null);
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản của bạn đã được xác thực trước đó rồi.");
+        }
+
+        String newToken = java.util.UUID.randomUUID().toString();
+        user.setVerificationToken(newToken);
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), newToken);
     }
 
     private UserProfileResponse mapToResponse(User user) {

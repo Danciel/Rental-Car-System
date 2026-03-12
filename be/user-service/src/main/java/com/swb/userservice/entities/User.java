@@ -55,18 +55,6 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    public void requestAccountDeletion() {
-        if (this.walletBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalStateException("Không thể xóa tài khoản khi đang có dư nợ.");
-        }
-        this.status = UserStatus.PENDING_DELETION;
-        this.deletionRequestedAt = LocalDateTime.now();
-    }
-
-    /*
-    TODO:
-    changePassword(String oldPassword, String newPassword)
-    updateProfile(UserDTO userDTO)
-    verifyEmail(String verificationCode)
-    */
+    @Column(name = "verification_token")
+    private String verificationToken;
 }

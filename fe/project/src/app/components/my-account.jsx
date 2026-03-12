@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 
 export function MyAccount({ onClose }) {
+
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  const yesterday = date.toISOString().split('T')[0];
+
   const [activeSection, setActiveSection] = useState("bookings");
 
   // --- State cho Khách Hàng (My Trips) ---
@@ -41,6 +46,11 @@ export function MyAccount({ onClose }) {
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [userError, setUserError] = useState("");
 
+  // --- State cho Info Tab ---
+  const [formData, setFormData] = useState({ fullName: "", phone: "", dateOfBirth: "" });
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoadingUser(true);
@@ -56,6 +66,17 @@ export function MyAccount({ onClose }) {
 
     fetchProfile();
   }, []);
+
+  // Update form data when user data is available
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        phone: user.phoneNumber || "",
+        dateOfBirth: user.dateOfBirth || ""
+      });
+    }
+  }, [user]);
 
   const avatarSrc = (user) => {
     if (!user)
@@ -183,6 +204,35 @@ export function MyAccount({ onClose }) {
       setDetailError("Failed to load booking detail");
     } finally {
       setIsLoadingDetail(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    try {
+      setIsUpdating(true);
+      const res = await userAPI.updateMyProfile(formData);
+
+      alert("Update profile successsfully!");
+      setUser(res.data || res);
+
+    } catch (err) {
+      alert(err.message || "Connection Error!");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    try {
+      setIsResending(true);
+      await userAPI.resendVerification();
+
+      alert("Verification email has been resent! Please check your inbox.");
+    } catch (err) {
+      alert(err.message || "Connection Error!");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -354,6 +404,7 @@ export function MyAccount({ onClose }) {
             <nav className="space-y-2">
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
+
                 const isActive = activeSection === item.id;
 
                 return (
@@ -415,6 +466,89 @@ export function MyAccount({ onClose }) {
                 </div>
               </div>
             </div>
+
+            {/* TAB PERSONAL INFO (THÔNG TIN CÁ NHÂN) */}
+            {activeSection === "info" && (
+                <div className="max-w-3xl">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
+
+                  {/* Cảnh báo chưa xác thực Email */}
+                  {user?.status === 'INACTIVE' && (
+                      <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-6 h-6 text-amber-600" />
+                          <div>
+                            Your account is <strong>Inactive</strong>. Please verify your email to unlock all features.
+                          </div>
+                        </div>
+                        <button
+                            onClick={handleResendEmail}
+                            disabled={isResending}
+                            className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-lg hover:bg-amber-700 transition-colors disabled:bg-amber-400"
+                        >
+                          {isResending ? 'Sending...' : 'Resend Verification Email'}
+                        </button>
+                      </div>
+                  )}
+
+                  {/* Form thông tin */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-8">
+                    <form onSubmit={handleUpdateProfile} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700">Họ và tên</label>
+                          <input
+                              type="text"
+                              value={formData.fullName}
+                              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1E40AF] focus:border-transparent outline-none"
+                              required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700">Email (Không thể đổi)</label>
+                          <input
+                              type="email"
+                              value={user?.email || ""}
+                              disabled
+                              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700">Số điện thoại</label>
+                          <input
+                              type="text"
+                              value={formData.phone}
+                              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1E40AF] outline-none"
+                              required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700">Ngày sinh</label>
+                          <input
+                              type="date"
+                              value={formData.dateOfBirth}
+                              onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                              max={yesterday}
+                              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1E40AF] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-4 border-t border-gray-100">
+                        <button
+                            type="submit"
+                            disabled={isUpdating}
+                            className="px-8 py-3 bg-[#1E40AF] text-white rounded-xl font-bold hover:bg-blue-800 transition-colors"
+                        >
+                          {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+            )}
 
             {/* Booking Section */}
             {activeSection === "bookings" && (

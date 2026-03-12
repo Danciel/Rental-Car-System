@@ -1,9 +1,10 @@
 package com.swb.userservice.services;
 
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 
 import java.util.List;
@@ -20,4 +21,12 @@ public interface UserService {
     UserProfileResponse getMyProfile(String email);
 
     UserProfileResponse updateMyProfile(String email, UpdateProfileRequest request);
+
+    void changePassword(String email, ChangePasswordRequest request);
+
+    void requestAccountDeletion(String email);
+
+    void verifyEmail(String token);
+
+    void resendVerificationEmail(String email);
 }
