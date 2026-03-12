@@ -7,6 +7,7 @@ import com.swb.userservice.enums.UserStatus;
 import com.swb.userservice.repositories.RoleRepository;
 import com.swb.userservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Set;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
@@ -25,7 +27,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
 
         if (roleRepository.count() == 0) {
-            System.out.println("🌱 Đang khởi tạo dữ liệu mẫu (Data Seeding)...");
+            log.info("🌱 Đang khởi tạo dữ liệu mẫu (Data Seeding) cho User...");
 
             // 1. Roles
             Role roleCustomer = roleRepository.save(new Role(null, ERole.ROLE_CUSTOMER));
@@ -35,76 +37,105 @@ public class DataSeeder implements CommandLineRunner {
             // Mật khẩu chung cho tất cả các user mẫu
             String commonPassword = passwordEncoder.encode("123456");
 
-            /*
-            TODO: Tạo các user mẫu với các đặc điểm khác nhau để test:
-            5 User ACTIVE với các role và trạng thái khác nhau:
-            - 2 user CUSTOMER
-            - 1 user OWNER
-            - 1 user ADMIN
-            - 1 user vừa là CUSTOMER và OWNER
-
-            1 user INACTIVE để test trường hợp tài khoản chưa hoàn tất đăng ký hoặc không xác thực email.
-
-            1 user BANNED để test trường hợp tài khoản bị cấm truy cập do vi phạm chính sách. (Có thể dùng email hoặc hotline để liên hệ hỗ trợ)
-
-            1 user PENDING_DELETION để test trường hợp tài khoản đang chờ xóa.
-             */
-
-            // 2. CUSTOMER 1
-            User customerUnverified = User.builder()
+            // ==========================================
+            // CÁC USER TRẠNG THÁI ACTIVE
+            // ==========================================
+            User customer1 = User.builder()
                     .email("customer1@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Nguyễn Khách Hàng")
-                    .phoneNumber("111111111")
+                    .phoneNumber("0911111111")
                     .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
-                    .walletBalance(new BigDecimal("1000000.00"))
+                    .walletBalance(new BigDecimal("10000000.00")) // 10 triệu đồng
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleCustomer))
                     .build();
-            userRepository.save(customerUnverified);
 
-            // 3. CUSTOMER 2
-            User customerVerified = User.builder()
+            User customer2 = User.builder()
                     .email("customer2@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Trần Khách Hàng")
-                    .phoneNumber("222222222")
+                    .fullName("Trần Khách Hàng Hai")
+                    .phoneNumber("0922222222")
                     .dateOfBirth(java.time.LocalDate.of(1995, 5, 15))
-                    .walletBalance(new BigDecimal("5000000.00"))
+                    .walletBalance(new BigDecimal("5000000.00")) // 5 triệu đồng
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleCustomer))
                     .build();
-            userRepository.save(customerVerified);
 
-            // 4. OWNER
             User owner = User.builder()
                     .email("owner@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Chủ Xe")
-                    .phoneNumber("333333333")
+                    .fullName("Lê Chủ Xe")
+                    .phoneNumber("0933333333")
                     .dateOfBirth(java.time.LocalDate.of(1990, 2, 28))
-                    .walletBalance(new BigDecimal("15000000.00"))
+                    .walletBalance(new BigDecimal("15000000.00")) // 15 triệu đồng
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleOwner))
                     .build();
-            userRepository.save(owner);
 
-            // 5. ADMIN
             User admin = User.builder()
                     .email("admin@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Quản Trị")
-                    .phoneNumber("444444444")
+                    .fullName("Hệ Thống Quản Trị")
+                    .phoneNumber("0944444444")
                     .dateOfBirth(java.time.LocalDate.of(1985, 12, 10))
                     .walletBalance(new BigDecimal("99999999.00"))
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleAdmin))
                     .build();
-            userRepository.save(admin);
 
-            System.out.println("✅ Khởi tạo dữ liệu mẫu thành công!");
+            // Vừa thuê xe vừa cho thuê xe
+            User dualRoleUser = User.builder()
+                    .email("pro@gmail.com")
+                    .passwordHash(commonPassword)
+                    .fullName("Khách Kiêm Chủ Xe")
+                    .phoneNumber("0955555555")
+                    .dateOfBirth(java.time.LocalDate.of(1992, 8, 8))
+                    .walletBalance(new BigDecimal("20000000.00"))
+                    .status(UserStatus.ACTIVE)
+                    .roles(Set.of(roleCustomer, roleOwner))
+                    .build();
+
+            // ==========================================
+            // CÁC TRẠNG THÁI TÀI KHOẢN KHÁC
+            // ==========================================
+            User inactiveUser = User.builder()
+                    .email("inactive@gmail.com")
+                    .passwordHash(commonPassword)
+                    .fullName("Chưa Xác Minh Email")
+                    .phoneNumber("0966666666")
+                    .walletBalance(BigDecimal.ZERO)
+                    .status(UserStatus.INACTIVE)
+                    .roles(Set.of(roleCustomer))
+                    .build();
+
+            User bannedUser = User.builder()
+                    .email("banned@gmail.com")
+                    .passwordHash(commonPassword)
+                    .fullName("Kẻ Gian Lận")
+                    .phoneNumber("0977777777")
+                    .walletBalance(BigDecimal.ZERO)
+                    .status(UserStatus.BANNED)
+                    .roles(Set.of(roleCustomer))
+                    .build();
+
+            User pendingDeletionUser = User.builder()
+                    .email("delete@gmail.com")
+                    .passwordHash(commonPassword)
+                    .fullName("Muốn Xóa Tài Khoản")
+                    .phoneNumber("0988888888")
+                    .walletBalance(BigDecimal.ZERO)
+                    .status(UserStatus.PENDING_DELETION)
+                    .roles(Set.of(roleCustomer))
+                    .build();
+
+            userRepository.saveAll(java.util.List.of(
+                    customer1, customer2, owner, admin, dualRoleUser, inactiveUser, bannedUser, pendingDeletionUser
+            ));
+
+            log.info("✅ Khởi tạo thành công 8 user mẫu!");
         } else {
-            System.out.println("Database đã có dữ liệu, bỏ qua bước Seeding.");
+            log.info("Database đã có dữ liệu User, bỏ qua bước Seeding.");
         }
     }
 }
