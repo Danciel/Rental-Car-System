@@ -1,6 +1,5 @@
 package com.swb.userservice.entities;
 
-import com.swb.userservice.enums.KYCStatus;
 import com.swb.userservice.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,13 +45,6 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
-    @Column(name = "is_license_verified", nullable = false)
-    private Boolean isLicenseVerified;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "kyc_status", length = 20)
-    private KYCStatus kycStatus;
-
     private LocalDateTime deletionRequestedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -62,10 +54,6 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private DriverLicense driverLicense;
-
 
     public void requestAccountDeletion() {
         if (this.walletBalance.compareTo(BigDecimal.ZERO) < 0) {

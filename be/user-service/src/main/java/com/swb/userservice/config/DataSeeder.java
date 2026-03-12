@@ -38,8 +38,7 @@ public class DataSeeder implements CommandLineRunner {
             /*
             TODO: Tạo các user mẫu với các đặc điểm khác nhau để test:
             5 User ACTIVE với các role và trạng thái khác nhau:
-            - 1 user CUSTOMER chưa xác thực bằng lái (isLicenseVerified = false)
-            - 1 user CUSTOMER đã xác thực bằng lái (isLicenseVerified = true)
+            - 2 user CUSTOMER
             - 1 user OWNER
             - 1 user ADMIN
             - 1 user vừa là CUSTOMER và OWNER
@@ -51,30 +50,28 @@ public class DataSeeder implements CommandLineRunner {
             1 user PENDING_DELETION để test trường hợp tài khoản đang chờ xóa.
              */
 
-            // 2. CUSTOMER 1 (Chưa xác thực bằng lái)
+            // 2. CUSTOMER 1
             User customerUnverified = User.builder()
                     .email("customer1@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Nguyễn Khách Hàng (Chưa BLX)")
+                    .fullName("Nguyễn Khách Hàng")
                     .phoneNumber("111111111")
                     .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
                     .walletBalance(new BigDecimal("1000000.00"))
                     .status(UserStatus.ACTIVE)
-                    .isLicenseVerified(false)
                     .roles(Set.of(roleCustomer))
                     .build();
             userRepository.save(customerUnverified);
 
-            // 3. CUSTOMER 2 (Đã xác thực bằng lái)
+            // 3. CUSTOMER 2
             User customerVerified = User.builder()
                     .email("customer2@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Trần Khách Hàng (Đã BLX)")
+                    .fullName("Trần Khách Hàng")
                     .phoneNumber("222222222")
                     .dateOfBirth(java.time.LocalDate.of(1995, 5, 15))
                     .walletBalance(new BigDecimal("5000000.00"))
                     .status(UserStatus.ACTIVE)
-                    .isLicenseVerified(true)
                     .roles(Set.of(roleCustomer))
                     .build();
             userRepository.save(customerVerified);
@@ -88,7 +85,6 @@ public class DataSeeder implements CommandLineRunner {
                     .dateOfBirth(java.time.LocalDate.of(1990, 2, 28))
                     .walletBalance(new BigDecimal("15000000.00"))
                     .status(UserStatus.ACTIVE)
-                    .isLicenseVerified(true)
                     .roles(Set.of(roleOwner))
                     .build();
             userRepository.save(owner);
@@ -102,7 +98,6 @@ public class DataSeeder implements CommandLineRunner {
                     .dateOfBirth(java.time.LocalDate.of(1985, 12, 10))
                     .walletBalance(new BigDecimal("99999999.00"))
                     .status(UserStatus.ACTIVE)
-                    .isLicenseVerified(true)
                     .roles(Set.of(roleAdmin))
                     .build();
             userRepository.save(admin);
