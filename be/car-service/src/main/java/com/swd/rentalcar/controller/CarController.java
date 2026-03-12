@@ -236,4 +236,35 @@ public class CarController {
         carService.deleteCar(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa xe thành công"));
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+// CAR REGISTRATION
+// ═════════════════════════════════════════════════════════════════════════
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<CarResponse>> registerCar(
+            @RequestHeader("X-User-Email") String email,
+            @Valid @RequestBody CarRequest request) {
+        CarResponse data = carService.registerCar(request, email);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(data, "Xe đã được gửi để xét duyệt. Vui lòng chờ xác nhận từ nhân viên."));
+    }
+
+    @GetMapping("/pending-review")
+    public ResponseEntity<ApiResponse<List<CarResponse>>> getPendingReviewCars() {
+        List<CarResponse> data = carService.getPendingReviewCars();
+        return ResponseEntity.ok(ApiResponse.success(data, "Lấy danh sách xe chờ duyệt thành công"));
+    }
+
+    @PatchMapping("/{id}/review")
+    public ResponseEntity<ApiResponse<CarResponse>> reviewCar(
+            @PathVariable Long id,
+            @RequestParam ApprovalStatus decision,
+            @RequestHeader("X-User-Email") String staffEmail) {
+        CarResponse data = carService.reviewCar(id, decision, staffEmail);
+        String message = decision == ApprovalStatus.APPROVED
+                ? "Xe đã được duyệt và đăng lên hệ thống"
+                : "Xe đã bị từ chối";
+        return ResponseEntity.ok(ApiResponse.success(data, message));
+    }
 }
