@@ -15,7 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = "roles")
     Optional<User> findByEmail(String email);
 
-    @EntityGraph(attributePaths = {"roles", "driverLicense"})
+    @EntityGraph(attributePaths = {"roles"})
     Optional<User> findById(Long id);
 
     Optional<User> findByVerificationToken(String verificationToken);
