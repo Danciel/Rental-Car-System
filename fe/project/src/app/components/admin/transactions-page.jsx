@@ -201,8 +201,8 @@ export function TransactionsPage() {
                 <tr>
                   <td colSpan={7} className="py-20 text-center text-gray-500">Loading data...</td>
                 </tr>
-              ) : filteredTransactions.length > 0 ? (
-                filteredTransactions.map((t) => (
+              ) : transactionsData.length > 0 ? (
+                transactionsData.map((t) => (
                   <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-6">
                       <span className="font-mono font-bold text-[#1E40AF] text-sm">{t.transactionCode}</span>

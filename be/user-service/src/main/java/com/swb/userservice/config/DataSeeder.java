@@ -43,7 +43,7 @@ public class DataSeeder implements CommandLineRunner {
             User customer1 = User.builder()
                     .email("customer1@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Nguyễn Khách Hàng")
+                    .fullName("Nguyễn Thành Nam")
                     .phoneNumber("0911111111")
                     .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
                     .walletBalance(new BigDecimal("100000000.00")) // 100 triệu đồng
@@ -52,9 +52,9 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User customer2 = User.builder()
-                    .email("customer2@gmail.com")
+                    .email("minhthu@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Trần Khách Hàng Hai")
+                    .fullName("Trần Minh Thư")
                     .phoneNumber("0922222222")
                     .dateOfBirth(java.time.LocalDate.of(1995, 5, 15))
                     .walletBalance(new BigDecimal("5000000.00")) // 5 triệu đồng
@@ -63,9 +63,9 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User owner = User.builder()
-                    .email("owner@gmail.com")
+                    .email("hoangphong@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Lê Chủ Xe")
+                    .fullName("Lê Hoàng Phong")
                     .phoneNumber("0933333333")
                     .dateOfBirth(java.time.LocalDate.of(1990, 2, 28))
                     .walletBalance(new BigDecimal("15000000.00")) // 15 triệu đồng
@@ -79,16 +79,16 @@ public class DataSeeder implements CommandLineRunner {
                     .fullName("Hệ Thống Quản Trị")
                     .phoneNumber("0944444444")
                     .dateOfBirth(java.time.LocalDate.of(1985, 12, 10))
-                    .walletBalance(new BigDecimal("99999999.00"))
+                    .walletBalance(new BigDecimal("9889999.00"))
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleAdmin))
                     .build();
 
             // Vừa thuê xe vừa cho thuê xe
             User dualRoleUser = User.builder()
-                    .email("pro@gmail.com")
+                    .email("pquocanh@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Khách Kiêm Chủ Xe")
+                    .fullName("Phạm Quốc Anh")
                     .phoneNumber("0955555555")
                     .dateOfBirth(java.time.LocalDate.of(1992, 8, 8))
                     .walletBalance(new BigDecimal("20000000.00"))
@@ -100,9 +100,9 @@ public class DataSeeder implements CommandLineRunner {
             // CÁC TRẠNG THÁI TÀI KHOẢN KHÁC
             // ==========================================
             User inactiveUser = User.builder()
-                    .email("inactive@gmail.com")
+                    .email("thanhhai35@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Chưa Xác Minh Email")
+                    .fullName("Đỗ Thanh Hải")
                     .phoneNumber("0966666666")
                     .walletBalance(BigDecimal.ZERO)
                     .status(UserStatus.INACTIVE)
@@ -110,9 +110,9 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User bannedUser = User.builder()
-                    .email("banned@gmail.com")
+                    .email("trongnghia67@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Kẻ Gian Lận")
+                    .fullName("Hoàng Trọng Nghĩa")
                     .phoneNumber("0977777777")
                     .walletBalance(BigDecimal.ZERO)
                     .status(UserStatus.BANNED)
@@ -120,9 +120,9 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User pendingDeletionUser = User.builder()
-                    .email("delete@gmail.com")
+                    .email("vuthanh@gmail.com")
                     .passwordHash(commonPassword)
-                    .fullName("Muốn Xóa Tài Khoản")
+                    .fullName("Vũ Thanh Huyền")
                     .phoneNumber("0988888888")
                     .walletBalance(BigDecimal.ZERO)
                     .status(UserStatus.PENDING_DELETION)
