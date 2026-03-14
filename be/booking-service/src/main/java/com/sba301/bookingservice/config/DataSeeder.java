@@ -3,20 +3,39 @@ package com.sba301.bookingservice.config;
 import com.sba301.bookingservice.entities.Booking;
 import com.sba301.bookingservice.entities.BookingStatus;
 import com.sba301.bookingservice.repositories.BookingRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
+import java.util.Map;
 
 @Slf4j
+@Configuration
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
   private final BookingRepository bookingRepository;
+  private final RestTemplate restTemplate;
+
+  @Value("${service.user.url}")
+  private String userServiceUrl;
+
+  @Value("${service.booking.url:http://localhost:8083}")
+  private String bookingServiceUrl;
+
+  // ═════════════════════════════════════════════════════════════════════
+  // ENTRY POINT
+  // ═════════════════════════════════════════════════════════════════════
 
   @Override
   public void run(String... args) {
@@ -71,6 +90,7 @@ public class DataSeeder implements CommandLineRunner {
                     .createdAt(now.minusDays(1))
                     .build(),
 
+
             // 4. Chuyến đi ĐANG CHỜ THANH TOÁN
             Booking.builder()
                     .bookingCode("BKG-PENDING-004")
@@ -84,6 +104,34 @@ public class DataSeeder implements CommandLineRunner {
                     .createdAt(now.minusHours(2)) // Vừa đặt cách đây 2 tiếng
                     .build()
     );
+    String renterToken = login("customer1@gmail.com", "123456");
+    if (renterToken == null) {
+      log.warn("⚠️ Could not login as renter — skipping booking seed");
+      return;
+    }
+
+    seedBookings(renterToken);
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // LOGIN — UserServiceClient has no login method so we call REST directly
+            new Object[]{ 2L,  5,  7, "1600000"},
+            new Object[]{ 3L,  7, 10, "1400000"},
+            new Object[]{ 4L,  4,  6, "1900000"},
+            new Object[]{ 6L,  2,  4, "2100000"},
+            new Object[]{ 7L,  6,  8, "2100000"},
+            new Object[]{ 8L,  9, 12, "1700000"},
+            new Object[]{ 9L,  5,  7, "1160000"},
+            new Object[]{10L,  3,  5, "1160000"}
+//            new Object[]{11L,  8, 11, "1440000"},
+//            new Object[]{12L,  4,  6, "1700000"},
+//            new Object[]{14L,  7, 10, "1160000"},
+//            new Object[]{15L, 10, 13, "1440000"},
+//            new Object[]{16L,  5,  8, "2200000"},
+
+    HttpHeaders headers = new HttpHeaders();
+        Map<String, Object> body = Map.of(
+                "carId",         carId,
 
     bookingRepository.saveAll(mockBookings);
     log.info("✅ Seeded {} diverse bookings successfully!", mockBookings.size());

@@ -47,6 +47,8 @@ public class DataSeeder implements CommandLineRunner {
         seedCarBrands();
         seedCarModels();
         seedCars(owner1Id, owner2Id); // Truyền cả 2 ID vào để chia xe
+        seedPendingReviewCars(owner1Id);
+        logAllSeededCars();
 
         log.info("✅ Database seeding complete.");
     }
@@ -145,7 +147,16 @@ public class DataSeeder implements CommandLineRunner {
                     carModel("C-Class", "Sedan hạng sang", 2023, FuelType.GASOLINE, new BigDecimal("66"), null, TransmissionType.AUTOMATIC, 5, mercedes, sedan),
                     carModel("3 Series", "Sedan thể thao", 2023, FuelType.GASOLINE, new BigDecimal("59"), null, TransmissionType.AUTOMATIC, 5, bmw, sedan),
                     carModel("VF 6", "SUV điện hạng B", 2024, FuelType.ELECTRIC, null, new BigDecimal("59.6"), TransmissionType.AUTOMATIC, 5, vinfast, suv),
-                    carModel("VF 8", "SUV điện hạng C", 2024, FuelType.ELECTRIC, null, new BigDecimal("82"), TransmissionType.AUTOMATIC, 5, vinfast, suv)
+                    carModel("VF 8", "SUV điện hạng C", 2024, FuelType.ELECTRIC, null, new BigDecimal("82"), TransmissionType.AUTOMATIC, 5, vinfast, suv),
+                    // Ford
+                    carModel("Explorer", "SUV 7 chỗ cỡ lớn, mạnh mẽ.",         2022, FuelType.GASOLINE, new BigDecimal("72"),  null,                  TransmissionType.AUTOMATIC, 7, ford,    suv),
+                    carModel("Everest",  "SUV 7 chỗ địa hình, phù hợp gia đình.", 2023, FuelType.DIESEL, new BigDecimal("80"),  null,                  TransmissionType.AUTOMATIC, 7, ford,    suv),
+                    // Tesla
+                    carModel("Model X",  "SUV điện cao cấp với cửa cánh chim.", 2024, FuelType.ELECTRIC, null,                  new BigDecimal("100"), TransmissionType.AUTOMATIC, 7, tesla,   suv),
+                    // Hyundai
+                    carModel("Santa Fe", "SUV 7 chỗ sang trọng, phù hợp gia đình.", 2023, FuelType.GASOLINE, new BigDecimal("67"), null,               TransmissionType.AUTOMATIC, 7, hyundai, suv),
+                    // Kia
+                    carModel("Sorento",  "SUV 7 chỗ cao cấp, nhiều trang bị an toàn.", 2023, FuelType.GASOLINE, new BigDecimal("67"), null,            TransmissionType.AUTOMATIC, 7, kia,     suv)
             );
             carModelRepository.saveAll(models);
         } catch (Exception e) { log.error("❌ Failed to seed car models: {}", e.getMessage()); }
@@ -262,6 +273,41 @@ public class DataSeeder implements CommandLineRunner {
         } catch (Exception e) {
             log.error("❌ Failed to seed cars: {}", e.getMessage());
         }
+    }
+
+    private void seedPendingReviewCars(Long ownerId) {
+        // ── PENDING REVIEW (for testing Car Registration approval flow) ──────────
+        CarModel explorer = carModelRepository.findByName("Explorer");
+        CarModel everest  = carModelRepository.findByName("Everest");
+        CarModel modelX   = carModelRepository.findByName("Model X");
+        CarModel santafe  = carModelRepository.findByName("Santa Fe");
+        CarModel sorento  = carModelRepository.findByName("Sorento");
+
+        List<Car> pendingCars = List.of(
+                buildCar("30A-99001", "1100000", "7000000", CarStatus.STOPPED, explorer, ownerId),
+                buildCar("30B-99002", "1050000", "7000000", CarStatus.STOPPED, everest,  ownerId),
+                buildCar("30C-99003", "1500000", "10000000",CarStatus.STOPPED, modelX,   ownerId),
+                buildCar("30D-99004", "950000",  "6000000", CarStatus.STOPPED, santafe,  ownerId),
+                buildCar("30E-99005", "880000",  "5800000", CarStatus.STOPPED, sorento,  ownerId)
+        );
+
+        addImage(pendingCars.get(0), "/images/cars/ford-ranger.jpg",      true);
+        addImage(pendingCars.get(1), "/images/cars/ford-ranger.jpg",      true);
+        addImage(pendingCars.get(2), "/images/cars/tesla-model-y.jpg",    true);
+        addImage(pendingCars.get(3), "/images/cars/hyundai-tucson.jpg",   true);
+        addImage(pendingCars.get(4), "/images/cars/kia-seltos.jpg",       true);
+
+        carRepository.saveAll(pendingCars);
+        log.info("✅ Seeded {} pending review cars", pendingCars.size());
+    }
+
+    private void logAllSeededCars(){
+        List<Car> cars = carRepository.findAll();
+        log.info("✅ Seeded {} cars ({} available, {} pending review)",
+                cars.size(),
+                cars.stream().filter(c -> c.getStatus() == CarStatus.AVAILABLE).count(),
+                cars.stream().filter(c -> c.getStatus() == CarStatus.STOPPED).count()
+        );
     }
 
     // ═════════════════════════════════════════════════════════════════════════

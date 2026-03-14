@@ -46,7 +46,7 @@ public class DataSeeder implements CommandLineRunner {
                     .fullName("Nguyễn Khách Hàng")
                     .phoneNumber("0911111111")
                     .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
-                    .walletBalance(new BigDecimal("10000000.00")) // 10 triệu đồng
+                    .walletBalance(new BigDecimal("100000000.00")) // 100 triệu đồng
                     .status(UserStatus.ACTIVE)
                     .roles(Set.of(roleCustomer))
                     .build();

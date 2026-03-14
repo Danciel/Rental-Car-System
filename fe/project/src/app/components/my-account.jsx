@@ -123,35 +123,38 @@ export function MyAccount({ onClose }) {
   // FETCH DATA CHỦ XE (HOST DASHBOARD)
   // ==========================================
   const fetchOwnerBookings = useCallback(async () => {
-    setIsLoadingOwner(true);
-    try {
-      const token = localStorage.getItem("ACCESS_TOKEN");
-      // GỌI API LẤY DANH SÁCH ĐƠN NGƯỜI KHÁC ĐẶT XE CỦA MÌNH
-      // Giả sử API của bạn là /api/bookings/owner-requests
-      const res = await fetch('http://localhost:8080/api/bookings/manage', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const json = await res.json();
-      if (res.ok && json.data) {
-        // Lọc ra các đơn đang chờ duyệt
-        const pendings = json.data.filter(b => b.status === 'PENDING_APPROVAL');
-        const mappedData = pendings.map(b => ({
-          id: b.id,
-          carName: `Xe ID: ${b.carId}`, // Thay bằng tên thật nếu BE có trả về
-          customerName: `Mã đơn: ${b.bookingCode}`, // Thay bằng tên khách nếu BE có trả về
-          startDate: new Date(b.startTime).toLocaleDateString('vi-VN'),
-          endDate: new Date(b.endTime).toLocaleDateString('vi-VN'),
-          totalPrice: b.totalPrice,
-          status: b.status.toLowerCase()
-        }));
-        setOwnerBookings(mappedData);
+      setIsLoadingOwner(true);
+      try {
+          const email = localStorage.getItem('USER_EMAIL') ?? '';
+          const data = await bookingAPI.getManage(email);
+          const pendings = (data ?? []).filter(b => b.status === 'PENDING_APPROVAL');
+          const mapped = pendings.map(b => ({
+              id: b.id,
+              carName: `Xe ID: ${b.carId}`,
+              customerName: `Mã đơn: ${b.bookingCode}`,
+              startDate: new Date(b.startTime).toLocaleDateString('vi-VN'),
+              endDate: new Date(b.endTime).toLocaleDateString('vi-VN'),
+              totalPrice: b.totalPrice,
+              status: b.status.toLowerCase()
+          }));
+          setOwnerBookings(mapped);
+      } catch (error) {
+          console.error(error);
+      } finally {
+          setIsLoadingOwner(false);
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoadingOwner(false);
-    }
   }, []);
+
+  const handleOwnerRespond = async (bookingId, isAccept) => {
+      try {
+          const email = localStorage.getItem('USER_EMAIL') ?? '';
+          await bookingAPI.respondToRequest(bookingId, isAccept, email);
+          alert(isAccept ? "Đã DUYỆT yêu cầu thuê xe!" : "Đã TỪ CHỐI yêu cầu thuê xe!");
+          fetchOwnerBookings();
+      } catch (error) {
+          alert(error.message || "Có lỗi xảy ra, vui lòng thử lại.");
+      }
+  };
 
   useEffect(() => {
     if (activeSection === "bookings") fetchHistory();
@@ -174,24 +177,6 @@ export function MyAccount({ onClose }) {
     }
   };
 
-  // --- LOGIC DUYỆT/TỪ CHỐI CỦA CHỦ XE ---
-  const handleOwnerRespond = async (bookingId, isAccept) => {
-    try {
-      const token = localStorage.getItem("ACCESS_TOKEN");
-      const res = await fetch(`http://localhost:8080/api/bookings/${bookingId}/respond?accept=${isAccept}`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        alert(isAccept ? "Đã DUYỆT yêu cầu thuê xe!" : "Đã TỪ CHỐI yêu cầu thuê xe!");
-        fetchOwnerBookings(); // Tải lại danh sách đơn của chủ xe
-      } else {
-        alert("Có lỗi xảy ra, vui lòng thử lại.");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const handleViewDetails = async (bookingId) => {
     setIsLoadingDetail(true);
