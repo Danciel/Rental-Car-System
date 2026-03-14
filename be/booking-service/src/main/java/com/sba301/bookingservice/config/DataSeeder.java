@@ -115,6 +115,35 @@ public class DataSeeder implements CommandLineRunner {
 
   // ═════════════════════════════════════════════════════════════════════
   // LOGIN — UserServiceClient has no login method so we call REST directly
+  // ═════════════════════════════════════════════════════════════════════
+
+  private String login(String email, String password) {
+    try {
+      Map<String, String> body = Map.of("email", email, "password", password);
+      Map<String, Object> response = restTemplate.postForObject(
+              userServiceUrl + "/api/users/login", body, Map.class);
+      if (response == null) return null;
+      Map<String, Object> data = (Map<String, Object>) response.get("data");
+      if (data == null) return null;
+      String token = (String) data.get("accessToken");
+      log.info("✅ Logged in as {} for seeding", email);
+      return token;
+    } catch (Exception e) {
+      log.error("❌ Login failed for {}: {}", email, e.getMessage());
+      return null;
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // SEED BOOKINGS
+  // ═════════════════════════════════════════════════════════════════════
+
+  private void seedBookings(String renterToken) {
+    // Only AVAILABLE cars from the car-service seeder:
+    // Skipped: 5 (STOPPED), 13 (BANNED), 19 (STOPPED)
+    // { carId, startDaysFromNow, endDaysFromNow, rentalPrice }
+    List<Object[]> entries = List.of(
+            new Object[]{ 1L,  3,  5, "1600000"},
             new Object[]{ 2L,  5,  7, "1600000"},
             new Object[]{ 3L,  7, 10, "1400000"},
             new Object[]{ 4L,  4,  6, "1900000"},
@@ -128,12 +157,55 @@ public class DataSeeder implements CommandLineRunner {
 //            new Object[]{14L,  7, 10, "1160000"},
 //            new Object[]{15L, 10, 13, "1440000"},
 //            new Object[]{16L,  5,  8, "2200000"},
+//            new Object[]{17L,  6,  9, "1800000"},
+//            new Object[]{18L,  3,  5, "1800000"},
+//            new Object[]{20L,  7, 10, "2400000"},
+//            new Object[]{21L, 12, 15, "2100000"},
+//            new Object[]{22L,  4,  7, "1560000"},
+//            new Object[]{23L,  8, 11, "2600000"}
+    );
 
     HttpHeaders headers = new HttpHeaders();
+    headers.set("Authorization", "Bearer " + renterToken);
+    headers.set("Content-Type", "application/json");
+    headers.set("X-User-Email", "customer1@gmail.com");
+
+    int success = 0;
+    for (Object[] entry : entries) {
+      try {
+        Long   carId     = (Long)   entry[0];
+        int    startDays = (int)    entry[1];
+        int    endDays   = (int)    entry[2];
+        String price     = (String) entry[3];
+
+        LocalDateTime start = LocalDateTime.now()
+                .plusDays(startDays).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime end   = LocalDateTime.now()
+                .plusDays(endDays).withHour(10).withMinute(0).withSecond(0).withNano(0);
+
         Map<String, Object> body = Map.of(
                 "carId",         carId,
+                "startTime",     start.toString(),
+                "endTime",       end.toString(),
+                "rentalPrice",   new BigDecimal(price),
+                "depositAmount", new BigDecimal(price)
+        );
 
-    bookingRepository.saveAll(mockBookings);
-    log.info("✅ Seeded {} diverse bookings successfully!", mockBookings.size());
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        restTemplate.postForObject(
+                bookingServiceUrl + "/api/bookings/request",
+                entity,
+                Map.class
+        );
+
+        success++;
+        log.info("✅ Seeded booking for carId {}", carId);
+
+      } catch (Exception e) {
+        log.warn("⚠️ Skipped booking for carId {}: {}", entry[0], e.getMessage());
+      }
+    }
+
+    log.info("✅ Seeded {}/{} bookings", success, entries.size());
   }
 }
