@@ -243,4 +243,36 @@ public class UserServiceImpl implements UserService {
                 .roles(roleNames)
                 .build();
     }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateWalletBalance(Long userId, BigDecimal amount) {
+        log.info("Yêu cầu cập nhật ví cho user ID: {}. Số tiền: {}", userId, amount);
+
+        // 1. Tìm user theo ID
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng với ID: " + userId));
+
+        // 2. Lấy số dư hiện tại (mặc định là 0 nếu null)
+        BigDecimal currentBalance = user.getWalletBalance() != null ? user.getWalletBalance() : BigDecimal.ZERO;
+
+        // 3. Tính toán số dư mới
+        BigDecimal newBalance = currentBalance.add(amount);
+
+        // 4. Kiểm tra số dư nếu là giao dịch trừ tiền (withdraw/payment)
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Giao dịch thất bại: Số dư không đủ. User ID: {}, Hiện tại: {}, Yêu cầu trừ: {}",
+                    userId, currentBalance, amount.abs());
+            throw new AppException(HttpStatus.BAD_REQUEST, "Số dư tài khoản không đủ để thực hiện giao dịch.");
+        }
+
+        // 5. Cập nhật và lưu vào database
+        user.setWalletBalance(newBalance);
+        User updatedUser = userRepository.save(user);
+
+        log.info("Cập nhật ví thành công. User ID: {}, Số dư mới: {}", userId, newBalance);
+
+        // 6. Trả về response theo format chung của hệ thống
+        return mapToResponse(updatedUser);
+    }
 }

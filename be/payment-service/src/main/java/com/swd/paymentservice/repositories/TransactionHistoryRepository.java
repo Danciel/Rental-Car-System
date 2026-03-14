@@ -1,12 +1,9 @@
-package com.swb.userservice.repositories;
+package com.swd.paymentservice.repositories;
 
-import com.swb.userservice.entities.TransactionHistory;
+import com.swd.paymentservice.entities.TransactionHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Repository
 public interface TransactionHistoryRepository extends

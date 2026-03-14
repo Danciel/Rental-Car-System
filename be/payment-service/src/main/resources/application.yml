@@ -1,6 +1,12 @@
 server:
   port: 8084
 
+service:
+  user:
+    url: http://localhost:8081
+  car:
+    url: http://localhost:8082
+
 spring:
   application:
     name: payment-service
@@ -24,5 +30,5 @@ spring:
     enabled: false
 
 jwt:
-  # ${TÊN_BI?N_ENV:Giá_tr?_m?c_??nh_n?u_không_tìm_th?y}
+  # ${Tï¿½N_BI?N_ENV:Giï¿½_tr?_m?c_??nh_n?u_khï¿½ng_tï¿½m_th?y}
   secret: ${JWT_SECRET:Y2h1b2lfYmlfbWF0X3NpZXVfY2FwX2N1YV9oZV90aG9uZ19taWNyb3NlcnZpY2VzX3AycA}

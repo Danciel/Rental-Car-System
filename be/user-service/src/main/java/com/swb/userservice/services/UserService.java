@@ -7,6 +7,7 @@ import com.swb.userservice.dtos.response.RegisterRequest;
 import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface UserService {
@@ -21,6 +22,8 @@ public interface UserService {
     UserProfileResponse getMyProfile(String email);
 
     UserProfileResponse updateMyProfile(String email, UpdateProfileRequest request);
+
+    UserProfileResponse updateWalletBalance(Long userId, BigDecimal amount);
 
     void changePassword(String email, ChangePasswordRequest request);
 

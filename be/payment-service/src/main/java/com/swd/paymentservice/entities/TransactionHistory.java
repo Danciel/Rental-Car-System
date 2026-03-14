@@ -1,7 +1,7 @@
-package com.swb.userservice.entities;
+package com.swd.paymentservice.entities;
 
-import com.swb.userservice.enums.TransactionStatus;
-import com.swb.userservice.enums.TransactionType;
+import com.swd.paymentservice.enums.TransactionStatus;
+import com.swd.paymentservice.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,20 +18,24 @@ public class TransactionHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Người thực hiện/Người gửi tiền
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
-    private User sender;
+    // Chỉ lưu ID của người gửi (từ User Service)
+    @Column(name = "sender_id")
+    private Long senderId;
 
-    // Người nhận tiền (Trong trường hợp của bạn có thể là Admin)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id")
-    private User receiver;
+    // Chỉ lưu ID của người nhận (từ User Service)
+    @Column(name = "receiver_id")
+    private Long receiverId;
+
+    @Column(name = "sender_name")
+    private String senderName;
+
+    @Column(name = "receiver_name")
+    private String receiverName;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
-    // Số dư sau khi thực hiện giao dịch (Rất quan trọng để đối soát lỗi)
+    // Số dư sau khi thực hiện giao dịch (Lấy từ User Service tại thời điểm giao dịch)
     @Column(precision = 19, scale = 2)
     private BigDecimal postBalanceSender;
 
@@ -47,17 +51,16 @@ public class TransactionHistory {
     private TransactionStatus status;
 
     @Column(length = 500)
-    private String description; // Nội dung thanh toán (ví dụ: "Thanh toán thuê xe CR-123")
+    private String description;
 
     @Column(unique = true, length = 50)
-    private String transactionCode; // Mã giao dịch duy nhất (Ví dụ: TX20240312xxxx)
+    private String transactionCode;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt =  LocalDateTime.now();
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
         if (this.status == null) this.status = TransactionStatus.SUCCESS;
     }
 }

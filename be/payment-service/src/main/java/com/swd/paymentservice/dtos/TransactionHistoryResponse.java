@@ -1,7 +1,7 @@
-package com.swb.userservice.dtos;
+package com.swd.paymentservice.dtos;
 
-import com.swb.userservice.enums.TransactionStatus;
-import com.swb.userservice.enums.TransactionType;
+import com.swd.paymentservice.enums.TransactionStatus;
+import com.swd.paymentservice.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

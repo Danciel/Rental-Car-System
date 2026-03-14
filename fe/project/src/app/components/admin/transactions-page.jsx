@@ -1,207 +1,134 @@
-import { useState } from 'react';
-import { Search, ArrowRight, Shield, User, Car, DollarSign, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
-import { Card } from '@/app/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Search, ArrowRight, Shield, User, CheckCircle, XCircle, Clock, Info, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Card } from '../ui/card'; 
+import { paymentAPI } from '../../api/payment'; 
+import { CustomFilter } from "../ui/filter"; // Import your custom filter
 
 export function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [transactionsData, setTransactionsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  // Sample transaction data (Mock data kept as requested)
-  const transactionsData = [
-    {
-      id: '1',
-      code: 'GD-8821',
-      amount: 3000000,
-      type: 'deposit',
-      status: 'holding',
-      customerName: 'Nguyễn Văn An',
-      hostName: 'Trần Thị Bình',
-      carName: 'VinFast VF9',
-      date: '28/01/2025',
-      escrowStatus: 'holding'
-    },
-    {
-      id: '2',
-      code: 'GD-8822',
-      amount: 5000000,
-      type: 'payment',
-      status: 'completed',
-      customerName: 'Lê Minh Tuấn',
-      hostName: 'Phạm Văn Cường',
-      carName: 'Mazda CX-5',
-      date: '27/01/2025',
-      escrowStatus: 'released'
-    },
-    {
-      id: '3',
-      code: 'GD-8823',
-      amount: 2000000,
-      type: 'deposit',
-      status: 'refunded',
-      customerName: 'Hoàng Thị Lan',
-      hostName: 'Đỗ Văn Hùng',
-      carName: 'Toyota Camry',
-      date: '26/01/2025',
-      escrowStatus: 'refunded'
-    },
-    {
-      id: '4',
-      code: 'GD-8824',
-      amount: 4500000,
-      type: 'payment',
-      status: 'holding',
-      customerName: 'Vũ Đức Anh',
-      hostName: 'Ngô Thị Mai',
-      carName: 'Honda CR-V',
-      date: '25/01/2025',
-      escrowStatus: 'holding'
-    },
-    {
-      id: '5',
-      code: 'GD-8825',
-      amount: 1500000,
-      type: 'deposit',
-      status: 'cancelled',
-      customerName: 'Bùi Văn Sơn',
-      hostName: 'Lý Thị Hoa',
-      carName: 'Mercedes C-Class',
-      date: '24/01/2025',
-      escrowStatus: 'refunded'
-    },
-    {
-      id: '6',
-      code: 'GD-8826',
-      amount: 6000000,
-      type: 'payment',
-      status: 'completed',
-      customerName: 'Đặng Minh Quân',
-      hostName: 'Phan Văn Long',
-      carName: 'VinFast VF8',
-      date: '23/01/2025',
-      escrowStatus: 'released'
-    },
-    {
-      id: '7',
-      code: 'GD-8827',
-      amount: 2500000,
-      type: 'deposit',
-      status: 'holding',
-      customerName: 'Trương Thị Nga',
-      hostName: 'Hồ Văn Tâm',
-      carName: 'Toyota Vios',
-      date: '22/01/2025',
-      escrowStatus: 'holding'
-    },
-    {
-      id: '8',
-      code: 'GD-8828',
-      amount: 3500000,
-      type: 'payment',
-      status: 'completed',
-      customerName: 'Mai Văn Đức',
-      hostName: 'Võ Thị Thanh',
-      carName: 'Mazda 3',
-      date: '21/01/2025',
-      escrowStatus: 'released'
-    }
+  const typeOptions = [
+    { label: "All Types", value: "" },
+    { label: "Deposit", value: "DEPOSIT" },
+    { label: "Payment", value: "PAYMENT" },
+    { label: "Refund", value: "REFUND" },
   ];
 
-  // Filter transactions
-  const filteredTransactions = transactionsData.filter(transaction => {
-    const matchesSearch = transaction.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transaction.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transaction.hostName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || transaction.type === selectedType;
-    const matchesStatus = selectedStatus === 'all' || transaction.status === selectedStatus;
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  const statusOptions = [
+    { label: "All Status", value: "" },
+    { label: "Success", value: "SUCCESS" },
+    { label: "Pending", value: "PENDING" },
+    { label: "Failed", value: "FAILED" },
+  ];
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return amount.toLocaleString('vi-VN') + 'đ';
-  };
-
-  // Get type badge
-  const getTypeBadge = (type) => {
-    if (type === 'deposit') {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-          Deposit
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-          Payment
-        </span>
-      );
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const params = {
+        page: page,
+        size: 10,
+        type: selectedType,
+        status: selectedStatus,
+        sort: "createdAt,desc",
+      };
+      const response = await paymentAPI.getAllTransactions(params);
+      
+      if (response && response.data) {
+        setTransactionsData(response.data.content || []);
+        setTotalPages(response.data.totalPages || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      setTransactionsData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get status badge
+  useEffect(() => {
+    fetchTransactions();
+  }, [page, selectedType, selectedStatus]);
+
+  const filteredTransactions = transactionsData.filter(transaction => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      transaction.transactionCode?.toLowerCase().includes(searchLower) ||
+      transaction.description?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN').format(amount || 0) + 'đ';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTypeBadge = (type) => {
+    const t = type?.toUpperCase();
+    switch (t) {
+      case 'DEPOSIT': return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Deposit</span>;
+      case 'PAYMENT': return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Payment</span>;
+      case 'REFUND': return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Refund</span>;
+      default: return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{type}</span>;
+    }
+  };
+
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'holding':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F97316] text-white shadow-sm">
-            <Clock className="w-3.5 h-3.5" />
-            Holding
-          </span>
-        );
-      case 'completed':
+    const s = status?.toUpperCase();
+    switch (s) {
+      case 'SUCCESS':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-600 text-white shadow-sm">
-            <CheckCircle className="w-3.5 h-3.5" />
-            Completed
+            <CheckCircle className="w-3.5 h-3.5" /> Success
           </span>
         );
-      case 'cancelled':
+      case 'PENDING':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F97316] text-white shadow-sm">
+            <Clock className="w-3.5 h-3.5" /> Pending
+          </span>
+        );
+      case 'FAILED':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow-sm">
-            <XCircle className="w-3.5 h-3.5" />
-            Cancelled
-          </span>
-        );
-      case 'refunded':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-600 text-white shadow-sm">
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            Refunded
+            <XCircle className="w-3.5 h-3.5" /> Failed
           </span>
         );
       default:
-        return null;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-500 text-white">{status}</span>;
     }
   };
 
-  // Calculate statistics
-  const totalHolding = transactionsData
-    .filter(t => t.status === 'holding')
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const totalCompleted = transactionsData
-    .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0);
-
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transaction Management</h1>
-          <p className="text-sm text-gray-600 mt-1">Monitor and manage escrow cash flow</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Transaction Management</h1>
+        <p className="text-sm text-gray-600 mt-1">System-wide transaction history</p>
       </div>
 
-      {/* Financial Statistics */}
+      {/* Financial Statistics
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-5 rounded-xl border-gray-200 bg-gradient-to-br from-orange-50 to-white border-l-4 border-l-[#F97316]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Held in Escrow</p>
-              <p className="text-2xl font-bold text-[#F97316]">{formatCurrency(totalHolding)}</p>
+              <p className="text-2xl font-bold text-[#F97316]"></p>
             </div>
             <Clock className="w-10 h-10 text-[#F97316] opacity-20" />
           </div>
@@ -211,7 +138,7 @@ export function TransactionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Completed</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(totalCompleted)}</p>
+              <p className="text-2xl font-bold text-green-600"></p>
             </div>
             <CheckCircle className="w-10 h-10 text-green-600 opacity-20" />
           </div>
@@ -221,148 +148,122 @@ export function TransactionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Transactions</p>
-              <p className="text-2xl font-bold text-[#1E40AF]">{transactionsData.length}</p>
+              <p className="text-2xl font-bold text-[#1E40AF]"></p>
             </div>
             <Shield className="w-10 h-10 text-[#1E40AF] opacity-20" />
           </div>
         </Card>
-      </div>
+      </div> */}
 
-      {/* Filters Section */}
+      {/* Filters Section with CustomFilter */}
       <Card className="p-6 rounded-xl border-gray-200">
-        <div className="space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by transaction code, customer or host name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-transparent text-sm"
+        <div className="flex flex-col gap-4">
+
+          <div className="flex gap-4">
+            <CustomFilter
+              value={selectedType}
+              options={typeOptions}
+              onChange={(val) => {
+                setSelectedType(val);
+                setPage(0);
+              }}
             />
-          </div>
 
-          {/* Filter Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-transparent text-sm bg-white"
-              >
-                <option value="all">All Types</option>
-                <option value="deposit">Deposit</option>
-                <option value="payment">Payment</option>
-              </select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-transparent text-sm bg-white"
-              >
-                <option value="all">All Statuses</option>
-                <option value="holding">Holding</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Results count */}
-          <div className="text-sm text-gray-600 pt-2">
-            Showing <span className="font-semibold text-gray-900">{filteredTransactions.length}</span> transactions
+            <CustomFilter
+              value={selectedStatus}
+              options={statusOptions}
+              onChange={(val) => {
+                setSelectedStatus(val);
+                setPage(0);
+              }}
+            />
           </div>
         </div>
       </Card>
 
-      {/* Transactions Table */}
+      {/* Table Section (Kept Original UI) */}
       <Card className="rounded-xl border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b-2 border-gray-200 bg-gray-50">
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Code</th>
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Customer / Host</th>
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Car</th>
-                <th className="text-right py-4 px-6 text-sm font-bold text-gray-700">Amount</th>
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Type</th>
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Status</th>
-                <th className="text-left py-4 px-6 text-sm font-bold text-gray-700">Date</th>
+              <tr className="border-b-2 border-gray-200 bg-gray-50 text-left">
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Transaction Code</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Sender / Receiver</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Description</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700 text-right">Amount</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Type</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Status</th>
+                <th className="py-4 px-6 text-sm font-bold text-gray-700">Time</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.length > 0 ? (
-                filteredTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    {/* Transaction Code */}
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center text-gray-500">Loading data...</td>
+                </tr>
+              ) : transactionsData.length > 0 ? (
+                transactionsData.map((t) => (
+                  <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-6">
-                      <span className="font-mono font-bold text-[#1E40AF] text-sm">
-                        {transaction.code}
-                      </span>
+                      <span className="font-mono font-bold text-[#1E40AF] text-sm">{t.transactionCode}</span>
                     </td>
-
-                    {/* Customer / Host Names */}
                     <td className="py-4 px-6">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-semibold text-gray-900">{transaction.customerName}</span>
+                          <span className="text-sm font-semibold text-gray-900">{t.senderName || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4 text-green-600" />
-                          <span className="text-sm text-gray-600">{transaction.hostName}</span>
+                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <span className="text-sm text-gray-600">{t.receiverName || 'N/A'}</span>
                         </div>
                       </div>
                     </td>
-
-                    {/* Car Name */}
-                    <td className="py-4 px-6">
-                      <span className="text-sm font-medium text-gray-900">{transaction.carName}</span>
-                    </td>
-
-                    {/* Amount */}
-                    <td className="py-4 px-6 text-right">
-                      <span className="font-bold text-lg text-gray-900">
-                        {formatCurrency(transaction.amount)}
+                    <td className="py-4 px-6 max-w-[200px]">
+                      <span className="text-sm text-gray-700 truncate block" title={t.description}>
+                        {t.description}
                       </span>
                     </td>
-
-                    {/* Type */}
-                    <td className="py-4 px-6">
-                      {getTypeBadge(transaction.type)}
+                    <td className="py-4 px-6 text-right font-bold text-gray-900">
+                      {formatCurrency(t.amount)}
                     </td>
-
-                    {/* Status */}
-                    <td className="py-4 px-6">
-                      {getStatusBadge(transaction.status)}
-                    </td>
-
-                    {/* Date */}
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-gray-600">{transaction.date}</span>
+                    <td className="py-4 px-6">{getTypeBadge(t.type)}</td>
+                    <td className="py-4 px-6">{getStatusBadge(t.status)}</td>
+                    <td className="py-4 px-6 text-sm text-gray-500">
+                      {formatDate(t.createdAt)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <Search className="w-12 h-12 text-gray-300" />
-                      <p className="text-gray-600">No transactions found</p>
-                    </div>
-                  </td>
+                  <td colSpan={7} className="py-12 text-center text-gray-500">No transactions found</td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Section */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            Page {page + 1} of {totalPages || 1}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </Card>
     </div>
