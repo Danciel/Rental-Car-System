@@ -1,4 +1,4 @@
-package com.swb.userservice.enums;
+package com.swd.paymentservice.enums;
 
 public enum TransactionStatus {
     SUCCESS,

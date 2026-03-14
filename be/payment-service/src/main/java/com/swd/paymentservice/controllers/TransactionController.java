@@ -1,11 +1,11 @@
-package com.swb.userservice.controllers;
+package com.swd.paymentservice.controllers;
 
 import com.swb.common.dtos.ApiResponse;
-import com.swb.userservice.dtos.TransactionRequest;
-import com.swb.userservice.dtos.TransactionHistoryResponse;
-import com.swb.userservice.enums.TransactionStatus;
-import com.swb.userservice.enums.TransactionType;
-import com.swb.userservice.services.TransactionService;
+import com.swd.paymentservice.dtos.TransactionRequest;
+import com.swd.paymentservice.dtos.TransactionHistoryResponse;
+import com.swd.paymentservice.enums.TransactionStatus;
+import com.swd.paymentservice.enums.TransactionType;
+import com.swd.paymentservice.services.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users/transactions")
+@RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class TransactionController {
 

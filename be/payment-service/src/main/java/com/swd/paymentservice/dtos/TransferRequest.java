@@ -1,4 +1,4 @@
-package com.swb.userservice.dtos;
+package com.swd.paymentservice.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,9 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransactionRequest {
-    private Long userId;
+public class TransferRequest {
+    private Long senderId;
+    private Long receiverId;
     private BigDecimal amount;
     private String description;
 }

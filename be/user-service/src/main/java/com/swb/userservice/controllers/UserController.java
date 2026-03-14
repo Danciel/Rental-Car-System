@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -102,5 +103,16 @@ public class UserController {
             @RequestHeader("X-User-Email") String email) {
         userService.resendVerificationEmail(email);
         return ResponseEntity.ok(ApiResponse.success(null, "Email xác thực đã được gửi lại. Vui lòng kiểm tra hòm thư."));
+    }
+
+    @PutMapping("/{userId}/wallet")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateWallet(
+            @PathVariable Long userId,
+            @RequestParam BigDecimal amount) {
+
+        // Gọi sang Service để xử lý cộng/trừ tiền
+        UserProfileResponse responseData = userService.updateWalletBalance(userId, amount);
+
+        return ResponseEntity.ok(ApiResponse.success(responseData, "Cập nhật số dư ví thành công"));
     }
 }
