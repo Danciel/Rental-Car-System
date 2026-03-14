@@ -1,13 +1,18 @@
 package com.swb.userservice.services;
 
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
-import com.swb.userservice.dtos.request.UpdateLicenseRequest;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public interface UserService {
+    List<UserProfileResponse> getAllUsers();
+
     UserProfileResponse registerUser(RegisterRequest request);
 
     LoginResponse loginUser(LoginRequest request);
@@ -18,5 +23,13 @@ public interface UserService {
 
     UserProfileResponse updateMyProfile(String email, UpdateProfileRequest request);
 
-    UserProfileResponse submitDriverLicense(String email, UpdateLicenseRequest request);
+    UserProfileResponse updateWalletBalance(Long userId, BigDecimal amount);
+
+    void changePassword(String email, ChangePasswordRequest request);
+
+    void requestAccountDeletion(String email);
+
+    void verifyEmail(String token);
+
+    void resendVerificationEmail(String email);
 }

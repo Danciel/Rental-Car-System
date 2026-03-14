@@ -50,4 +50,31 @@ public class UserServiceClient {
             return null;
         }
     }
+
+    public String getUserStatus(String email) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-User-Email", email);
+
+            // Gọi API sang User Service lấy Profile
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    userServiceUrl + "/api/users/me",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+
+            if (response.getBody() == null) return null;
+
+            Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+            if (data == null) return null;
+
+            Object status = data.get("status");
+            return status != null ? status.toString() : null;
+
+        } catch (Exception e) {
+            log.warn("Failed to get user status for email {}: {}", email, e.getMessage());
+            return null;
+        }
+    }
 }

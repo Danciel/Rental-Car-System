@@ -1,8 +1,7 @@
 package com.swd.paymentservice.enums;
 
-public enum PaymentStatus {
-    PENDING,
+public enum TransactionStatus {
     SUCCESS,
     FAILED,
-    CANCELLED
+    PENDING
 }

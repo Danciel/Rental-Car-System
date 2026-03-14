@@ -81,7 +81,7 @@ public class UserServiceClient {
             return id != null ? Long.valueOf(id.toString()) : null;
 
         } catch (Exception e) {
-            log.warn("Could not login as owner: {}"+ e.getMessage());
+            log.warn("Could not login as owner: {}", e.getMessage());
             return null;
         }
     }

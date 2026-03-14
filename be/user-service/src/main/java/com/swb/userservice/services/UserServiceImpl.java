@@ -1,17 +1,15 @@
 package com.swb.userservice.services;
 
 import com.swb.common.exception.AppException;
-import com.swb.userservice.dtos.LoginRequest;
-import com.swb.userservice.dtos.LoginResponse;
-import com.swb.userservice.dtos.request.UpdateLicenseRequest;
+import com.swb.userservice.dtos.request.ChangePasswordRequest;
+import com.swb.userservice.dtos.request.LoginRequest;
+import com.swb.userservice.dtos.response.LoginResponse;
 import com.swb.userservice.dtos.request.UpdateProfileRequest;
-import com.swb.userservice.entities.DriverLicense;
 import com.swb.userservice.entities.Role;
 import com.swb.userservice.entities.User;
-import com.swb.userservice.dtos.RegisterRequest;
-import com.swb.userservice.dtos.UserProfileResponse;
+import com.swb.userservice.dtos.response.RegisterRequest;
+import com.swb.userservice.dtos.response.UserProfileResponse;
 import com.swb.userservice.enums.ERole;
-import com.swb.userservice.enums.KYCStatus;
 import com.swb.userservice.enums.UserStatus;
 import com.swb.userservice.repositories.RoleRepository;
 import com.swb.userservice.repositories.UserRepository;
@@ -20,12 +18,12 @@ import com.swb.userservice.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,6 +36,15 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<UserProfileResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional
@@ -53,18 +60,23 @@ public class UserServiceImpl implements UserService {
         Set<Role> roles = new HashSet<>();
         roles.add(customerRole);
 
+        String token = java.util.UUID.randomUUID().toString();
+
         User newUser = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
                 .walletBalance(BigDecimal.ZERO)
-                .status(UserStatus.ACTIVE)
-                .isLicenseVerified(false)
+                .status(UserStatus.INACTIVE)
+                .verificationToken(token)
                 .roles(roles)
                 .build();
 
         User savedUser = userRepository.save(newUser);
         log.info("Đăng ký thành công user id: {}", savedUser.getId());
+
+        emailService.sendVerificationEmail(newUser.getEmail(), token);
 
         return mapToResponse(savedUser);
     }
@@ -79,8 +91,11 @@ public class UserServiceImpl implements UserService {
             throw new AppException(HttpStatus.BAD_REQUEST, "Email hoặc mật khẩu không chính xác");
         }
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa.");
+        }
+        if (user.getStatus() == UserStatus.PENDING_DELETION) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản đang trong quá trình xóa.");
         }
 
         String token = jwtTokenProvider.generateToken(user);
@@ -92,7 +107,6 @@ public class UserServiceImpl implements UserService {
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
                 .roles(user.getRoles().stream().map(role -> role.getName().name()).collect(Collectors.toSet()))
-                .isLicenseVerified(user.getIsLicenseVerified())
                 .build();
 
         return LoginResponse.builder()
@@ -129,7 +143,6 @@ public class UserServiceImpl implements UserService {
                 .roles(user.getRoles().stream()
                         .map(role -> role.getName().name())
                         .collect(java.util.stream.Collectors.toSet()))
-                .isLicenseVerified(user.getIsLicenseVerified())
                 .build();
     }
 
@@ -139,11 +152,12 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 
-        user.setFullName(request.getFullName());
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
         if (request.getPhone() != null) {
             user.setPhoneNumber(request.getPhone());
         }
-
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
         }
@@ -155,40 +169,64 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserProfileResponse submitDriverLicense(String email, UpdateLicenseRequest request) {
+    public void changePassword(String email, ChangePasswordRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 
-        // 1. Tạo hoặc cập nhật thông tin Bằng lái
-        DriverLicense license = user.getDriverLicense();
-        if (license == null) {
-            license = new DriverLicense();
-            license.setUser(user);
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Mật khẩu cũ không chính xác");
         }
 
-        license.setLicenseNumber(request.getLicenseNumber());
-        license.setImageFrontUrl(request.getFrontImageUrl());
-        license.setImageBackUrl(request.getBackImageUrl());
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
 
-        // Test only
-        // TODO: Admin sẽ xem ảnh và nhập thủ công, có thể có AI OCR đọc thẳng và tự động điền và admin xác nhận lại
-        license.setLicenseClass("B1");
-        license.setExpiryDate(java.time.LocalDate.now().plusYears(5));
+    @Override
+    @Transactional
+    public void requestAccountDeletion(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
 
-        user.setDriverLicense(license);
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Tài khoản đang bị khóa, không thể thực hiện thao tác này");
+        }
 
-        // 2. Chuyển trạng thái xác minh KYC sang Chờ Duyệt
-        user.setKycStatus(com.swb.userservice.enums.KYCStatus.PENDING);
+        user.setStatus(UserStatus.PENDING_DELETION);
+        user.setDeletionRequestedAt(LocalDateTime.now());
 
         userRepository.save(user);
+    }
 
-        return getMyProfile(email);
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Token không hợp lệ hoặc tài khoản đã được xác thực!"));
+
+        user.setStatus(UserStatus.ACTIVE);
+        user.setVerificationToken(null);
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản của bạn đã được xác thực trước đó rồi.");
+        }
+
+        String newToken = java.util.UUID.randomUUID().toString();
+        user.setVerificationToken(newToken);
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), newToken);
     }
 
     private UserProfileResponse mapToResponse(User user) {
-        boolean licenseVerified = user.getDriverLicense() != null
-                && user.getDriverLicense().getVerificationStatus() == KYCStatus.VERIFIED;
-
         Set<String> roleNames = user.getRoles().stream()
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet());
@@ -203,7 +241,38 @@ public class UserServiceImpl implements UserService {
                 .walletBalance(user.getWalletBalance())
                 .status(user.getStatus().name())
                 .roles(roleNames)
-                .isLicenseVerified(licenseVerified)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateWalletBalance(Long userId, BigDecimal amount) {
+        log.info("Yêu cầu cập nhật ví cho user ID: {}. Số tiền: {}", userId, amount);
+
+        // 1. Tìm user theo ID
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng với ID: " + userId));
+
+        // 2. Lấy số dư hiện tại (mặc định là 0 nếu null)
+        BigDecimal currentBalance = user.getWalletBalance() != null ? user.getWalletBalance() : BigDecimal.ZERO;
+
+        // 3. Tính toán số dư mới
+        BigDecimal newBalance = currentBalance.add(amount);
+
+        // 4. Kiểm tra số dư nếu là giao dịch trừ tiền (withdraw/payment)
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Giao dịch thất bại: Số dư không đủ. User ID: {}, Hiện tại: {}, Yêu cầu trừ: {}",
+                    userId, currentBalance, amount.abs());
+            throw new AppException(HttpStatus.BAD_REQUEST, "Số dư tài khoản không đủ để thực hiện giao dịch.");
+        }
+
+        // 5. Cập nhật và lưu vào database
+        user.setWalletBalance(newBalance);
+        User updatedUser = userRepository.save(user);
+
+        log.info("Cập nhật ví thành công. User ID: {}, Số dư mới: {}", userId, newBalance);
+
+        // 6. Trả về response theo format chung của hệ thống
+        return mapToResponse(updatedUser);
     }
 }

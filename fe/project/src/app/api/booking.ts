@@ -9,7 +9,21 @@ const getHeaders = () => {
     };
 };
 
+
 export const bookingAPI = {
+    getManage: async (email: string) => {
+            const token = localStorage.getItem("ACCESS_TOKEN");
+            const response = await fetch(`${API_URL}/manage`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Email': email
+                }
+            });
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : {};
+            if (!response.ok) throw new Error(data.message || "Không thể lấy danh sách booking");
+            return data.data ?? [];
+        },
     // 1. Khách hàng gửi yêu cầu thuê xe (Bước 1)
     requestBooking: async (bookingData: { carId: number, startTime: string, endTime: string, rentalPrice: number, depositAmount: number }) => {
         const response = await fetch(`${API_URL}/request`, {
@@ -43,4 +57,5 @@ export const bookingAPI = {
         if (!response.ok) throw new Error(data.message || "Thanh toán thất bại");
         return data;
     }
+
 };
