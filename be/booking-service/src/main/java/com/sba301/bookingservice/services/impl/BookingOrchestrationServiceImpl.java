@@ -1,9 +1,11 @@
 package com.sba301.bookingservice.services.impl;
 
 import com.sba301.bookingservice.client.CarServiceClient;
+import com.sba301.bookingservice.client.PaymentServiceClient;
 import com.sba301.bookingservice.client.UserServiceClient;
 import com.sba301.bookingservice.dto.BookCarAndPayRequest;
 import com.sba301.bookingservice.dto.BookCarAndPayResponse;
+import com.sba301.bookingservice.dto.TransactionRequest;
 import com.sba301.bookingservice.dtos.BookingDetailResponse;
 import com.sba301.bookingservice.entities.Booking;
 import com.sba301.bookingservice.entities.BookingStatus;
@@ -32,6 +34,7 @@ public class BookingOrchestrationServiceImpl implements com.sba301.bookingservic
   private final RentalContractRepository rentalContractRepository;
   private final CarServiceClient carServiceClient;
   private final UserServiceClient userServiceClient;
+  private final PaymentServiceClient paymentServiceClient;
   // ═════════════════════════════════════════════════════════════════════════
   // MAIN ORCHESTRATION
   // ═════════════════════════════════════════════════════════════════════════
@@ -155,6 +158,16 @@ public class BookingOrchestrationServiceImpl implements com.sba301.bookingservic
             .totalAmount(booking.getTotalPrice())
             .createdAt(now)
             .build();
+
+      // 6. Gọi sang Payment Service để chuyển tiền cho Chủ xe
+      TransactionRequest payRequest = TransactionRequest.builder()
+              .userId(currentUserId)
+              .amount(booking.getTotalPrice())
+              .description("Thanh toán thuê xe đơn: " + booking.getBookingCode())
+              .build();
+
+      // GỌI QUA REST TEMPLATE CLIENT
+      paymentServiceClient.payToAdmin(payRequest);
 
     rentalContract = rentalContractRepository.save(rentalContract);
     booking.setRentalContract(rentalContract);
