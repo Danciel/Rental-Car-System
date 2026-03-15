@@ -52,7 +52,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User customer2 = User.builder()
-                    .email("minhthu@gmail.com")
+                    .email("customer2@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Trần Minh Thư")
                     .phoneNumber("0922222222")
@@ -63,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User owner = User.builder()
-                    .email("hoangphong@gmail.com")
+                    .email("owner@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Lê Hoàng Phong")
                     .phoneNumber("0933333333")
@@ -86,7 +86,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // Vừa thuê xe vừa cho thuê xe
             User dualRoleUser = User.builder()
-                    .email("pquocanh@gmail.com")
+                    .email("pro@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Phạm Quốc Anh")
                     .phoneNumber("0955555555")
@@ -100,7 +100,7 @@ public class DataSeeder implements CommandLineRunner {
             // CÁC TRẠNG THÁI TÀI KHOẢN KHÁC
             // ==========================================
             User inactiveUser = User.builder()
-                    .email("thanhhai35@gmail.com")
+                    .email("inactive@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Đỗ Thanh Hải")
                     .phoneNumber("0966666666")
@@ -110,7 +110,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User bannedUser = User.builder()
-                    .email("trongnghia67@gmail.com")
+                    .email("banned@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Hoàng Trọng Nghĩa")
                     .phoneNumber("0977777777")
@@ -120,7 +120,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User pendingDeletionUser = User.builder()
-                    .email("vuthanh@gmail.com")
+                    .email("delete@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Vũ Thanh Huyền")
                     .phoneNumber("0988888888")

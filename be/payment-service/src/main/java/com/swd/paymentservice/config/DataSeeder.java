@@ -51,7 +51,7 @@ public class DataSeeder implements CommandLineRunner {
                 TransactionHistory tx = new TransactionHistory();
 
                 // 1. Tạo thời gian ngẫu nhiên (4 ngày gần nhất, từ 8h - 22h, giờ chẵn)
-                int randomDaysAgo = random.nextInt(4); // 0 đến 3 ngày trước
+                int randomDaysAgo = random.nextInt(4)+1; // 0 đến 3 ngày trước
                 int randomHour = random.nextInt(15) + 8; // 8 đến 22 (8h sáng - 10h tối)
 
                 LocalDateTime randomDateTime = LocalDateTime.now()
@@ -73,7 +73,7 @@ public class DataSeeder implements CommandLineRunner {
                 switch (type) {
                     case DEPOSIT:
                         tx.setSenderId(null);
-                        tx.setSenderName("Hệ thống Ngân hàng");
+                        tx.setSenderName("Hệ thống Quản Trị");
                         tx.setReceiverId(1L);
                         tx.setReceiverName("Nguyễn Thành Nam");
                         tx.setDescription("Nạp " + df.format(amount) + " đ vào tài khoản thành công");
@@ -83,7 +83,7 @@ public class DataSeeder implements CommandLineRunner {
 
                     case REFUND:
                         tx.setSenderId(null);
-                        tx.setSenderName("Hệ thống");
+                        tx.setSenderName("Hệ thống Quản Trị");
                         if (random.nextBoolean()) {
                             tx.setReceiverId(1L);
                             tx.setReceiverName("Nguyễn Thành Nam");
