@@ -15,6 +15,7 @@ import {ListYourCar} from '@/app/components/list-your-car';
 import {MyAccount} from '@/app/components/my-account';
 import {bookingApi} from '@/app/api/api';
 import { VerifyEmailPage } from './components/verify-email';
+import { UnauthorizedPage } from './components/unauthorized-page';
 
 type Page =
     | 'home'
@@ -26,7 +27,8 @@ type Page =
     | 'login'
     | 'list-car'
     | 'account'
-    | 'verify-email';
+    | 'verify-email'
+    | 'unauthorized';
 
 interface BookingData {
     carId: number;
@@ -35,6 +37,47 @@ interface BookingData {
     totalDays: number;
     totalPrice: number;
 }
+
+const checkAccess = (allowedRoles: string[]): boolean => {
+    if (typeof window === 'undefined') return false;
+
+    const token = localStorage.getItem('ACCESS_TOKEN');
+
+    if (!token) {
+        console.log("🛑 RBAC: Chưa đăng nhập (Không tìm thấy Token)!");
+        return false;
+    }
+
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const decodedToken = JSON.parse(jsonPayload);
+        const userRoles = decodedToken.roles || decodedToken.role || decodedToken.authorities || '';
+
+        let hasAccess = false;
+        if (typeof userRoles === 'string') {
+            const rolesArray = userRoles.split(',');
+            hasAccess = rolesArray.some(r =>
+                allowedRoles.includes(r.trim()) || allowedRoles.includes('ROLE_' + r.trim())
+            );
+        } else if (Array.isArray(userRoles)) {
+            hasAccess = userRoles.some((r: string) =>
+                allowedRoles.includes(r) || allowedRoles.includes('ROLE_' + r)
+            );
+        }
+
+        console.log(`🛡️ RBAC: Đã bóc Token! Quyền hiện tại: [${userRoles}]. Yêu cầu: [${allowedRoles.join(', ')}] -> ${hasAccess ? '✅ CHO QUA' : '❌ CHẶN'}`);
+        return hasAccess;
+
+    } catch (error) {
+        console.error("🛑 RBAC: Token bị lỗi định dạng hoặc không thể giải mã!", error);
+        return false;
+    }
+};
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -47,7 +90,6 @@ export default function App() {
 
     const [bookingData, setBookingData] = useState<BookingData | null>(null);
 
-    // Map page -> path (không chứa car-detail vì car-detail cần /car/:id)
     const pageToPath = useMemo<Record<Exclude<Page, 'car-detail'>, string>>(
         () => ({
             home: '/',
@@ -59,6 +101,7 @@ export default function App() {
             'list-car': '/list-your-car',
             account: '/account',
             'verify-email': '/verify-email',
+            unauthorized: '/unauthorized',
         }),
         []
     );
@@ -74,15 +117,11 @@ export default function App() {
             '/list-your-car': 'list-car',
             '/account': 'account',
             '/verify-email': 'verify-email',
+            '/unauthorized': 'unauthorized',
         }),
         []
     );
 
-    /**
-     * ✅ go() ổn định reference bằng useCallback.
-     * Quan trọng: go('car-detail') luôn lấy carId từ options, không lấy từ closure selectedCarId
-     * -> giúp go không đổi liên tục theo state và tránh loop với Navbar.
-     */
     const go = useCallback(
         (page: Page, options?: { replace?: boolean; carId?: number }) => {
             setCurrentPage(page);
@@ -181,6 +220,9 @@ export default function App() {
 
     // ADMIN
     if (currentPage === 'admin') {
+        if (!checkAccess(['ROLE_ADMIN'])) {
+            return <UnauthorizedPage onHome={() => go('home', { replace: true })} />;
+        }
         return <Admin onBackToSite={() => go('home', {replace: true})}/>;
     }
 
@@ -213,36 +255,53 @@ export default function App() {
                     <Footer/>
                 </>
             ) : currentPage === 'checkout' && selectedCarDetail && bookingData ? (
-                <>
-                    <CheckoutPage
-                        car={selectedCarDetail}
-                        pickupDate={bookingData.pickupDate}
-                        returnDate={bookingData.returnDate}
-                        totalDays={bookingData.totalDays}
-                        totalPrice={bookingData.totalPrice}
-                        onBack={() => go('car-detail', {carId: selectedCarDetail.id})}
-                        onConfirm={handleConfirmBooking}
-                    />
-                    <Footer/>
-                </>
+                checkAccess(['ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN']) ? (
+                    <>
+                        <CheckoutPage
+                            car={selectedCarDetail}
+                            pickupDate={bookingData.pickupDate}
+                            returnDate={bookingData.returnDate}
+                            totalDays={bookingData.totalDays}
+                            totalPrice={bookingData.totalPrice}
+                            onBack={() => go('car-detail', {carId: selectedCarDetail.id})}
+                            onConfirm={handleConfirmBooking}
+                        />
+                        <Footer/>
+                    </>
+                ) : (
+                    <LoginSignup onClose={() => go('home')}/>
+                )
             ) : currentPage === 'login' ? (
                 <>
                     <LoginSignup onClose={() => go('home')}/>
                     <Footer/>
                 </>
             ) : currentPage === 'list-car' ? (
-                <>
-                    <ListYourCar onClose={() => go('home')}/>
-                    <Footer/>
-                </>
+                checkAccess(['ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN']) ? (
+                    <>
+                        <ListYourCar onClose={() => go('home')}/>
+                        <Footer/>
+                    </>
+                ) : (
+                    <LoginSignup onClose={() => go('home')}/>
+                )
             ) : currentPage === 'account' ? (
-                <>
-                    <MyAccount onClose={() => go('home')}/>
-                    <Footer/>
-                </>
+                checkAccess(['ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN']) ? (
+                    <>
+                        <MyAccount onClose={() => go('home')}/>
+                        <Footer/>
+                    </>
+                ) : (
+                    <LoginSignup onClose={() => go('home')}/>
+                )
             ) : currentPage === 'verify-email' ? (
                 <>
                     <VerifyEmailPage onNavigate={() => go('account')} />
+                    <Footer />
+                </>
+            ) : currentPage === 'unauthorized' ? (
+                <>
+                    <UnauthorizedPage onHome={() => go('home')} />
                     <Footer />
                 </>
             ) : currentPage === 'confirmation' ? (
