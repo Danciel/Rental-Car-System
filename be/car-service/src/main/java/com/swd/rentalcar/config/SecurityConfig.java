@@ -1,4 +1,4 @@
-package com.swb.userservice.config;
+package com.swd.rentalcar.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

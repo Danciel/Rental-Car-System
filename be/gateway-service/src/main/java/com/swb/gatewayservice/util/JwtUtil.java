@@ -30,4 +30,13 @@ public class JwtUtil {
                 .getPayload()
                 .getSubject();
     }
+
+    public String getRolesFromToken(String token) {
+        return Jwts.parser()
+                .verifyWith(getSignKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("roles", String.class);
+    }
 }

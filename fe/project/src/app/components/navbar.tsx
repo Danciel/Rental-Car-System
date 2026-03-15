@@ -29,9 +29,8 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
         }
       } catch (error) {
         console.error("Failed to load profile:", error);
-        // Nếu token hết hạn hoặc sai, hệ thống tự dọn dẹp
-        localStorage.removeItem("ACCESS_TOKEN");
-        localStorage.removeItem("USER_EMAIL");
+        localStorage.clear();
+        setUser(null);
       }
     };
     fetchProfile();
@@ -55,9 +54,7 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
   };
 
   const handleLogout = () => {
-    // Xóa Token, reset state và điều hướng về trang chủ (không reload toàn bộ trang)
-    localStorage.removeItem("ACCESS_TOKEN");
-    localStorage.removeItem("USER_EMAIL");
+    localStorage.clear();
     setUser(null);
     handleNavigation('home');
     window.location.reload();

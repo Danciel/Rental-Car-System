@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,15 +28,17 @@ public class BookingController {
   private final BookingRepository bookingRepository;
   private final UserServiceClient userServiceClient;
 
+  @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER')")
   @PostMapping("/request")
   public ResponseEntity<ApiResponse<BookingDetailResponse>> requestBooking(
           @RequestHeader("X-User-Email") String email,
           @Valid @RequestBody BookCarAndPayRequest request) {
 
     BookingDetailResponse response = bookingOrchestrationService.createBookingRequest(request, email);
-    return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi yêu cầu thuê xe thành công. Vui lòng chờ chủ xe duyệt."));
+    return ResponseEntity.ok(ApiResponse.success(response, "Booking request sent successfully. Please wait for the car owner to approve."));
   }
 
+  @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_ADMIN')")
   @PatchMapping("/{id}/respond")
   public ResponseEntity<ApiResponse<String>> respondToBooking(
           @PathVariable Long id,
@@ -44,12 +47,13 @@ public class BookingController {
 
     bookingOrchestrationService.respondToBookingRequest(id, accept, email);
 
-    String message = accept ? "Đã CHẤP NHẬN yêu cầu thuê xe. Khách hàng đang tiến hành thanh toán."
-            : "Đã TỪ CHỐI yêu cầu thuê xe.";
+    String message = accept ? "Booking request ACCEPTED. The customer is proceeding with the payment."
+            : "Booking request REJECTED.";
 
     return ResponseEntity.ok(ApiResponse.success(null, message));
   }
 
+  @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER')")
   @PostMapping("/{id}/mock-pay")
   public ResponseEntity<ApiResponse<String>> mockPayment(
           @PathVariable Long id,
@@ -58,10 +62,10 @@ public class BookingController {
     bookingOrchestrationService.processMockPayment(id, email);
 
     return ResponseEntity.ok(ApiResponse.success(null,
-            "Thanh toán thành công! Hợp đồng đã được tạo và xe đã được khóa lịch."));
+            "Payment successful! The rental contract has been created and the booking schedule is locked."));
   }
 
-  // API dành cho Admin / Chủ xe để xem danh sách tất cả các yêu cầu đặt xe
+  @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_ADMIN')")
   @GetMapping("/manage")
   public ResponseEntity<ApiResponse<List<BookingDetailResponse>>> getAllBookingsForManagement() {
 
@@ -84,9 +88,10 @@ public class BookingController {
                     .build())
             .collect(Collectors.toList());
 
-    return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách quản lý booking thành công"));
+    return ResponseEntity.ok(ApiResponse.success(response, "Booking management list retrieved successfully."));
   }
 
+  @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN')")
   @GetMapping("/history")
   public ResponseEntity<ApiResponse<List<BookingHistoryItemResponse>>> getBookingHistory(
           @RequestHeader("X-User-Email") String email) {
@@ -96,7 +101,7 @@ public class BookingController {
       return ResponseEntity
               .status(HttpStatus.UNAUTHORIZED)
               .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(),
-                      "Không tìm thấy người dùng hoặc chưa đăng nhập"));
+                      "User not found or not logged in."));
     }
 
     List<Booking> bookings = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
@@ -114,9 +119,10 @@ public class BookingController {
                     .build())
             .collect(Collectors.toList());
 
-    return ResponseEntity.ok(ApiResponse.success(response, "Lấy lịch sử đặt xe thành công"));
+    return ResponseEntity.ok(ApiResponse.success(response, "Booking history retrieved successfully."));
   }
 
+  @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN')")
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<BookingDetailResponse>> getBookingDetail(
           @PathVariable Long id,
@@ -127,14 +133,14 @@ public class BookingController {
       return ResponseEntity
               .status(HttpStatus.UNAUTHORIZED)
               .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(),
-                      "Không tìm thấy người dùng hoặc chưa đăng nhập"));
+                      "User not found or not logged in."));
     }
 
     Optional<Booking> bookingOpt = bookingRepository.findById(id);
     if (bookingOpt.isEmpty() || !bookingOpt.get().getUserId().equals(userId)) {
       return ResponseEntity
               .status(HttpStatus.NOT_FOUND)
-              .body(ApiResponse.error(HttpStatus.NOT_FOUND.value(), "Không tìm thấy booking"));
+              .body(ApiResponse.error(HttpStatus.NOT_FOUND.value(), "Booking not found."));
     }
 
     Booking b = bookingOpt.get();
@@ -151,7 +157,7 @@ public class BookingController {
             .createdAt(b.getCreatedAt())
             .build();
 
-    return ResponseEntity.ok(ApiResponse.success(detail, "Lấy chi tiết booking thành công"));
+    return ResponseEntity.ok(ApiResponse.success(detail, "Booking details retrieved successfully."));
   }
 }
 

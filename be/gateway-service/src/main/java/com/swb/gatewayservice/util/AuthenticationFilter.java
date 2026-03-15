@@ -23,20 +23,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        // Public endpoints: không cần token, bỏ qua filter
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
 
         boolean isPublicPath = path.contains("/login") ||
                 path.contains("/register") ||
                 path.contains("/verify-email") ||
-                // VNPAY/MOMO gọi về ko cần Token
                 path.contains("/api/payments/callback") ||
-                // Cho phép bất kỳ ai xem danh sách xe bằng lệnh GET
-                (path.startsWith("/api/cars") && method.equals("GET")) ||
-                (path.startsWith("/api/car-brands") && method.equals("GET")) ||
-                (path.startsWith("/api/car-types") && method.equals("GET")) ||
-                (path.startsWith("/api/car-models") && method.equals("GET"));
+                (path.startsWith("/api/cars") && method.equals("GET"));
 
         if (isPublicPath) {
             return chain.filter(exchange);
@@ -56,9 +50,13 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         try {
             jwtUtil.validateToken(authHeader);
+
             String email = jwtUtil.getEmailFromToken(authHeader);
+            String roles = jwtUtil.getRolesFromToken(authHeader);
+
             ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                     .header("X-User-Email", email)
+                    .header("X-User-Roles", roles != null ? roles : "")
                     .build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
