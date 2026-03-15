@@ -63,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build();
 
             User owner = User.builder()
-                    .email("hoangphong@gmail.com")
+                    .email("owner@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Lê Hoàng Phong")
                     .phoneNumber("0933333333")
@@ -86,7 +86,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // Vừa thuê xe vừa cho thuê xe
             User dualRoleUser = User.builder()
-                    .email("pquocanh@gmail.com")
+                    .email("pro@gmail.com")
                     .passwordHash(commonPassword)
                     .fullName("Phạm Quốc Anh")
                     .phoneNumber("0955555555")

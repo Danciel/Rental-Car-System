@@ -1,241 +1,317 @@
-import { 
-  TrendingUp, 
-  Eye, 
-  Car, 
-  Clock 
-} from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
+import { Car, Users as UsersIcon, FileSpreadsheet, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export function ReportsPage() {
-  // Summary Cards Data
-  const summaryCards = [
-    {
-      title: 'Monthly Revenue',
-      value: '1.250.000.000đ',
-      icon: TrendingUp,
-      color: 'bg-[#1E40AF]',
-      change: '+12.5%'
-    },
-    {
-      title: 'Total Page Views',
-      value: '45.200',
-      icon: Eye,
-      color: 'bg-[#F97316]',
-      change: '+8.2%'
-    },
-    {
-      title: 'Active Rentals',
-      value: '120',
-      icon: Car,
-      color: 'bg-emerald-500',
-      change: '+5.3%'
-    },
-    {
-      title: 'Pending Approvals',
-      value: '15',
-      icon: Clock,
-      color: 'bg-amber-500',
-      change: '-2.1%'
-    }
-  ];
+  const [cars, setCars] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Revenue Growth Data (Line Chart)
-  // month keys: T1 -> Jan, T2 -> Feb, etc.
-  const revenueData = [
-    { month: 'Jan', revenue: 850 },
-    { month: 'Feb', revenue: 920 },
-    { month: 'Mar', revenue: 1050 },
-    { month: 'Apr', revenue: 980 },
-    { month: 'May', revenue: 1120 },
-    { month: 'Jun', revenue: 1180 },
-    { month: 'Jul', revenue: 1250 },
-  ];
+  // Pagination states
+  const [carPage, setCarPage] = useState(1);
+  const [userPage, setUserPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
-  // Car Type Distribution (Donut Chart)
-  const carTypeData = [
-    { name: 'SUV', value: 45, color: '#1E40AF' },
-    { name: 'Sedan', value: 35, color: '#F97316' },
-    { name: 'Electric', value: 20, color: '#10B981' }
-  ];
+  useEffect(() => {
+    const fetchReportData = async () => {
+      try {
+        const token = localStorage.getItem('ACCESS_TOKEN');
+        if (!token) throw new Error("Please login again!");
 
-  // Top 5 Cars by Revenue
-  const topCars = [
-    { rank: 1, name: 'VinFast VF8', bookings: 89, revenue: '178.000.000đ', rating: 4.9 },
-    { rank: 2, name: 'Toyota Camry', bookings: 76, revenue: '152.000.000đ', rating: 4.8 },
-    { rank: 3, name: 'Mercedes-Benz C-Class', bookings: 62, revenue: '186.000.000đ', rating: 4.9 },
-    { rank: 4, name: 'Honda CR-V', bookings: 71, revenue: '142.000.000đ', rating: 4.7 },
-    { rank: 5, name: 'Mazda CX-5', bookings: 58, revenue: '116.000.000đ', rating: 4.6 }
-  ];
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
+        const [carsRes, usersRes] = await Promise.all([
+          fetch('http://localhost:8080/api/cars', { headers }),
+          fetch('http://localhost:8080/api/users', { headers })
+        ]);
+
+        if (!carsRes.ok || !usersRes.ok) throw new Error("Error fetching data. Ensure you have Admin privileges.");
+
+        const carsData = await carsRes.json();
+        const usersData = await usersRes.json();
+
+        setCars(carsData.data || []);
+        setUsers(usersData.data || []);
+      } catch (err) {
+        console.error("Fetch report data error:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportData();
+  }, []);
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // EXPORT LOGIC (EXCEL & PDF)
+  // ═════════════════════════════════════════════════════════════════════════
+
+  const exportExcel = (type) => {
+    const isCar = type === 'cars';
+    const data = isCar ? cars : users;
+    const fileName = isCar ? 'Car_List_Report.xlsx' : 'User_List_Report.xlsx';
+
+    // 1. Prepare JSON Data based on actual Spring Boot DTOs
+    const exportData = data.map(item => isCar ? {
+      "ID": item.id,
+      "Car Name": `${item.brandName || ''} ${item.carModelId?.name || ''}`.trim() || 'N/A',
+      "License Plate": item.licensePlate || 'N/A',
+      "Status": item.status || 'N/A',
+      "Price/Day": item.basePricePerDay || 0,
+      "Deposit": item.depositAmount || 0
+    } : {
+      "ID": item.id,
+      "Full Name": item.fullName || 'N/A',
+      "Email": item.email || 'N/A',
+      "Roles": item.roles && item.roles.length > 0 ? item.roles.join(', ') : 'N/A',
+      "Wallet Balance": item.walletBalance || 0,
+      "Status": item.status || 'ACTIVE'
+    });
+
+    // 2. Create Sheet and Export
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, isCar ? "Cars" : "Users");
+    XLSX.writeFile(workbook, fileName);
+  };
+
+    const exportPDF = async (type) => {
+        const isCar = type === 'cars';
+        const data = isCar ? cars : users;
+        const doc = new jsPDF();
+
+        // =========================================================
+        // ĐÃ FIX: Dùng CDN siêu ổn định của Cloudflare (cdnjs)
+        // =========================================================
+        try {
+            const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf');
+
+            if (!response.ok) {
+                throw new Error("Lỗi mạng khi tải Font từ CDN");
+            }
+
+            const blob = await response.blob();
+            const base64Font = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(blob);
+            });
+
+            doc.addFileToVFS("Roboto-Regular.ttf", base64Font);
+            doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+            doc.setFont("Roboto");
+        } catch (error) {
+            console.error("Lỗi tải font tiếng Việt:", error);
+        }
+        // =========================================================
+
+        const title = isCar ? 'CAR LIST REPORT' : 'USER LIST REPORT';
+        doc.text(title, 14, 15);
+
+        const tableColumn = isCar
+            ? ["ID", "Car Name", "License Plate", "Status", "Price/Day"]
+            : ["ID", "Full Name", "Email", "Roles", "Status"];
+
+        const tableRows = data.map(item => isCar ? [
+            item.id,
+            `${item.brandName || ''} ${item.carModelId?.name || ''}`.trim() || 'N/A',
+            item.licensePlate || 'N/A',
+            item.status || 'N/A',
+            item.basePricePerDay || 0
+        ] : [
+            item.id,
+            item.fullName || 'N/A',
+            item.email || 'N/A',
+            item.roles && item.roles.length > 0 ? item.roles.join(', ') : 'N/A',
+            item.status || 'ACTIVE'
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 20,
+            styles: { font: 'Roboto' },
+            headStyles: { font: 'Roboto', fontStyle: 'bold' }
+        });
+
+        doc.save(isCar ? 'Car_Report.pdf' : 'User_Report.pdf');
+    };
+  // ═════════════════════════════════════════════════════════════════════════
+  // PAGINATION LOGIC
+  // ═════════════════════════════════════════════════════════════════════════
+
+  const getPaginatedData = (data, page) => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
+  const renderPagination = (dataLength, currentPage, setPage) => {
+    const totalPages = Math.ceil(dataLength / ITEMS_PER_PAGE) || 1;
+    return (
+        <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-gray-50/30 rounded-b-2xl">
+        <span className="text-sm text-gray-500">
+          Showing page <span className="font-semibold text-gray-900">{currentPage}</span> of {totalPages}
+          {' '}(Total: {dataLength})
+        </span>
+          <div className="flex gap-2">
+            <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+    );
+  };
+
+  if (loading) return (
+      <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-600" />
+        <p>Compiling report data...</p>
+      </div>
+  );
+
+  if (error) return <div className="p-8 text-center text-red-500 bg-red-50 rounded-xl">Error: {error}</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {summaryCards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <Card key={index} className="p-6 rounded-xl border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-2">{card.title}</p>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{card.value}</h3>
-                  <p className={`text-xs font-semibold ${
-                    card.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {card.change} vs last month
-                  </p>
-                </div>
-                <div className={`${card.color} p-3 rounded-xl`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Growth Chart */}
-        <Card className="p-6 rounded-xl border-gray-200 col-span-2">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue Growth</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis 
-                dataKey="month" 
-                stroke="#6B7280"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="#6B7280"
-                style={{ fontSize: '12px' }}
-                tickFormatter={(value) => `${value}M`}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '12px',
-                  fontSize: '12px'
-                }}
-                formatter={(value) => [`${value} Million VND`, 'Revenue']}
-              />
-              <Legend 
-                wrapperStyle={{ fontSize: '12px' }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#1E40AF" 
-                strokeWidth={3}
-                dot={{ fill: '#1E40AF', r: 5 }}
-                activeDot={{ r: 7 }}
-                name="Revenue (Million VND)"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Car Type Distribution */}
-        <Card className="p-6 rounded-xl border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Car Type Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={carTypeData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {carTypeData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '12px',
-                  fontSize: '12px'
-                }}
-                formatter={(value) => [`${value}%`, 'Ratio']}
-              />
-              <Legend 
-                verticalAlign="bottom"
-                height={36}
-                wrapperStyle={{ fontSize: '12px' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      {/* Top 5 Cars Table */}
-      <Card className="p-6 rounded-xl border-gray-200">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">Top 5 Highest Revenue Cars</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rank</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Car Name</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Bookings</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Revenue</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topCars.map((car) => (
-                <tr key={car.rank} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4">
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                      ${car.rank === 1 ? 'bg-amber-100 text-amber-700' : 
-                        car.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                        car.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-50 text-gray-600'}
-                    `}>
-                      {car.rank}
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="font-semibold text-gray-900">{car.name}</p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="text-gray-700">{car.bookings} bookings</p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <p className="font-semibold text-[#1E40AF]">{car.revenue}</p>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-1">
-                      <span className="text-amber-500">★</span>
-                      <span className="font-semibold text-gray-900">{car.rating}</span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Reports & Analytics</h2>
+          <p className="text-gray-500 text-sm">Manage and export system data to PDF / Excel</p>
         </div>
-      </Card>
-    </div>
+
+        {/* 1. CAR REPORT SECTION */}
+        <Card className="rounded-2xl border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                <Car size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Car List</h3>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => exportExcel('cars')} disabled={cars.length===0} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-all disabled:opacity-50">
+                <FileSpreadsheet size={16} /> Export Excel
+              </button>
+              <button onClick={() => exportPDF('cars')} disabled={cars.length===0} className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-sm font-medium transition-all disabled:opacity-50">
+                <FileText size={16} /> Export PDF
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-600">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50/50 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 font-semibold">ID</th>
+                <th className="px-6 py-4 font-semibold">Car Name</th>
+                <th className="px-6 py-4 font-semibold">License Plate</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+              </tr>
+              </thead>
+              <tbody>
+              {getPaginatedData(cars, carPage).map((car) => (
+                  <tr key={car.id} className="bg-white border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-6 py-4 font-medium text-gray-900">#{car.id}</td>
+                    {/* Using brandName and carModelId.name based on CarResponse.java */}
+                    <td className="px-6 py-4 text-gray-900 font-medium">{`${car.brandName || ''} ${car.carModelId?.name || ''}`.trim() || 'N/A'}</td>
+                    <td className="px-6 py-4"><span className="bg-gray-100 px-2.5 py-1 rounded font-mono text-xs border border-gray-200">{car.licensePlate || 'N/A'}</span></td>
+                    <td className="px-6 py-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold
+                      ${car.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                        car.status === 'RENTED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                      {car.status || 'N/A'}
+                    </span>
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+            {cars.length === 0 && <div className="p-6 text-center text-gray-500">No cars found.</div>}
+          </div>
+          {cars.length > 0 && renderPagination(cars.length, carPage, setCarPage)}
+        </Card>
+
+        {/* 2. USER REPORT SECTION */}
+        <Card className="rounded-2xl border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
+                <UsersIcon size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">User List</h3>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => exportExcel('users')} disabled={users.length===0} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-all disabled:opacity-50">
+                <FileSpreadsheet size={16} /> Export Excel
+              </button>
+              <button onClick={() => exportPDF('users')} disabled={users.length===0} className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-sm font-medium transition-all disabled:opacity-50">
+                <FileText size={16} /> Export PDF
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-600">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50/50 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 font-semibold">ID</th>
+                <th className="px-6 py-4 font-semibold">Full Name</th>
+                <th className="px-6 py-4 font-semibold">Email</th>
+                <th className="px-6 py-4 font-semibold">Roles</th>
+              </tr>
+              </thead>
+              <tbody>
+              {getPaginatedData(users, userPage).map((user) => (
+                  <tr key={user.id} className="bg-white border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-6 py-4 font-medium text-gray-900">#{user.id}</td>
+                    {/* Using fullName based on UserProfileResponse.java */}
+                    <td className="px-6 py-4 text-gray-900 font-medium">{user.fullName || 'N/A'}</td>
+                    <td className="px-6 py-4">{user.email || 'N/A'}</td>
+                    {/* Extracting Set<String> roles */}
+                    <td className="px-6 py-4">
+                      {user.roles && user.roles.length > 0 ? (
+                          <div className="flex gap-1 flex-wrap">
+                            {user.roles.map(role => (
+                                <span key={role} className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-semibold border border-purple-100">
+                            {role.replace('ROLE_', '')}
+                          </span>
+                            ))}
+                          </div>
+                      ) : (
+                          <span className="text-gray-400 text-xs">NO ROLE</span>
+                      )}
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+            {users.length === 0 && <div className="p-6 text-center text-gray-500">No users found.</div>}
+          </div>
+          {users.length > 0 && renderPagination(users.length, userPage, setUserPage)}
+        </Card>
+
+      </div>
   );
 }
