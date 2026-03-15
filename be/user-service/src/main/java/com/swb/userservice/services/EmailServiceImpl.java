@@ -10,6 +10,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,7 +30,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, "AutoShare Customer Support");
             helper.setTo(toEmail);
             helper.setSubject("Xác thực tài khoản AutoShare của bạn");
 
@@ -38,7 +40,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(htmlContent, true); // true để xác nhận đây là HTML
 
             mailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Failed to send email", e);
             throw new RuntimeException("Email sending failed");
         }

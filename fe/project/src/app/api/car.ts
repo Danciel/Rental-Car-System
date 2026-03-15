@@ -31,3 +31,23 @@ export const carAdminApi = {
     return data;
   }
 };
+
+export const carOwnerApi = {
+  registerCar: async (request: {
+    licensePlate: string;
+    basePricePerDay: number;
+    depositAmount: number;
+    carModelId: number;
+    images: { imageUrl: string; isThumbnail: boolean }[];
+  }, email: string) => {
+    const res = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: getHeaders(email),
+      body: JSON.stringify(request)
+    });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+    if (!res.ok) throw new Error(data.message || 'Không thể đăng ký xe');
+    return data;
+  }
+};
