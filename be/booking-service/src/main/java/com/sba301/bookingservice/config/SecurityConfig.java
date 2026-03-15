@@ -1,4 +1,4 @@
-package com.swb.userservice.config;
+package com.sba301.bookingservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

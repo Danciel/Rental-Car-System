@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,20 +34,34 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .status(HttpStatus.BAD_REQUEST.value())
-                .message("Dữ liệu đầu vào không hợp lệ")
+                .message("Invalid input data")
                 .data(errors) // Trả về chi tiết trường nào lỗi cho Frontend tự bôi đỏ
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // 3. Bắt các lỗi hệ thống không lường trước được (NullPointer, lỗi DB...)
+    // 3. Bắt các lỗi hệ thống chung
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
+        String exceptionName = ex.getClass().getName();
+
+        if (exceptionName.contains("AuthorizationDeniedException") ||
+                exceptionName.contains("AccessDeniedException")) {
+
+            log.warn("Access Denied: {}", ex.getMessage());
+            ApiResponse<Void> response = ApiResponse.error(
+                    HttpStatus.FORBIDDEN.value(),
+                    "You do not have permission to access this feature!"
+            );
+            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+        }
+
+        // Nếu không phải lỗi 403, thì trả về 500 như bình thường
         log.error("Unhandled Exception: ", ex);
         ApiResponse<Void> response = ApiResponse.error(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Đã có lỗi xảy ra trên hệ thống, vui lòng thử lại sau."
+                "An unexpected error occurred in the system. Please try again later."
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }

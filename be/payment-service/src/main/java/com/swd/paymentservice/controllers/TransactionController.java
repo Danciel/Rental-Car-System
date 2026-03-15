@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,30 +22,35 @@ public class TransactionController {
 
     private final TransactionService transactionService;
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER')")
     @PostMapping("/deposit")
     public ResponseEntity<ApiResponse<Void>> deposit(@RequestBody TransactionRequest request) {
         transactionService.deposit(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Nạp tiền vào tài khoản thành công"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Successfully deposited money into the account"));
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER')")
     @PostMapping("/withdraw")
     public ResponseEntity<ApiResponse<Void>> withdraw(@RequestBody TransactionRequest request) {
         transactionService.withdraw(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Rút tiền thành công"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Successfully withdrew money"));
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER')")
     @PostMapping("/pay")
     public ResponseEntity<ApiResponse<Void>> payToAdmin(@RequestBody TransactionRequest request) {
         transactionService.transferToAdmin(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Thanh toán cho hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Successfully paid to the system"));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/refund")
     public ResponseEntity<ApiResponse<Void>> refundToUser(@RequestBody TransactionRequest request) {
         transactionService.transferFromAdminToUser(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Hoàn tiền cho người dùng thành công"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Successfully refunded to the user"));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/history/all")
     public ResponseEntity<ApiResponse<Page<TransactionHistoryResponse>>> getAllTransactions(
             @RequestParam(required = false) TransactionType type,
@@ -63,9 +69,10 @@ public class TransactionController {
 
         Page<TransactionHistoryResponse> result = transactionService.getAllTransactions(type, status, pageable);
 
-        return ResponseEntity.ok(ApiResponse.success(result, "Lấy toàn bộ danh sách giao dịch hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success(result, "Successfully retrieved the system's transaction history"));
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_ADMIN')")
     @GetMapping("/history/{userId}")
     public ResponseEntity<ApiResponse<Page<TransactionHistoryResponse>>> getHistory(
             @PathVariable Long userId,
@@ -86,6 +93,6 @@ public class TransactionController {
 
         Page<TransactionHistoryResponse> result = transactionService.getTransactionHistory(userId, type, status, pageable);
 
-        return ResponseEntity.ok(ApiResponse.success(result, "Lấy lịch sử giao dịch thành công"));
+        return ResponseEntity.ok(ApiResponse.success(result, "Successfully retrieved the transaction history"));
     }
 }
