@@ -29,6 +29,7 @@ public class UserServiceClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-User-Email", email);
+            headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
             ResponseEntity<Map> response = restTemplate.exchange(
                     userServiceUrl + "/api/users/me",
@@ -55,6 +56,7 @@ public class UserServiceClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-User-Email", email);
+            headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
             // Gọi API sang User Service lấy Profile
             ResponseEntity<Map> response = restTemplate.exchange(

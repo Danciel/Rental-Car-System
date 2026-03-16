@@ -169,6 +169,7 @@ public class DataSeeder implements CommandLineRunner {
     headers.set("Authorization", "Bearer " + renterToken);
     headers.set("Content-Type", "application/json");
     headers.set("X-User-Email", "customer1@gmail.com");
+    headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
     int success = 0;
     for (Object[] entry : entries) {
