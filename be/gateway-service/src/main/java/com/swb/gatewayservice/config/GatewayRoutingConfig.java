@@ -31,6 +31,11 @@ public class GatewayRoutingConfig {
                         .path("/api/payments/**")
                         .uri("http://localhost:8084"))
 
+                // Report Service
+                .route("report-service", r -> r
+                        .path("/api/reports/**")
+                        .uri("http://localhost:8085"))
+
                 .build();
     }
 }
