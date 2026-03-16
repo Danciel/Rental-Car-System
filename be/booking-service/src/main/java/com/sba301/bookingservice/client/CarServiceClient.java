@@ -52,7 +52,8 @@ public class CarServiceClient {
     public void updateCarStatus(Long carId, String status, String email) {
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-User-Email", email);
+            headers.set("X-User-Email", "admin@gmail.com");
+            headers.set("X-User-Roles", "ROLE_ADMIN");
 
             restTemplate.exchange(
                     carServiceUrl + "/api/cars/{id}/status?status=" + status,

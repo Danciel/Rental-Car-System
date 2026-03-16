@@ -30,6 +30,7 @@ public class UserServiceClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-User-Email", email);
+            headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
             ResponseEntity<Map> response = restTemplate.exchange(
                     userServiceUrl + "/api/users/me",
@@ -38,9 +39,16 @@ public class UserServiceClient {
                     Map.class
             );
 
-            return extractIdFromResponse(response);
+            if (response.getBody() == null) return null;
+
+            Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+            if (data == null) return null;
+
+            Object id = data.get("id");
+            return id != null ? Long.valueOf(id.toString()) : null;
+
         } catch (Exception e) {
-            log.error("Failed to get user ID for email {}: {}", email, e.getMessage());
+            log.warn("Failed to get user profile for email {}: {}", email, e.getMessage());
             return null;
         }
     }
@@ -50,8 +58,16 @@ public class UserServiceClient {
      */
     public Map<String, Object> getUserProfile(Long userId) {
         try {
-            ResponseEntity<Map> response = restTemplate.getForEntity(
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-User-Email", "admin@gmail.com");
+            headers.set("X-User-Roles", "ROLE_ADMIN");
+
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(
                     userServiceUrl + "/api/users/" + userId,
+                    HttpMethod.GET,
+                    entity,
                     Map.class
             );
 
@@ -72,13 +88,16 @@ public class UserServiceClient {
      */
     public Map<String, Object> updateWallet(Long userId, BigDecimal amount) {
         try {
-            // URL ví dụ: http://localhost:8081/api/users/1/wallet?amount=50000
-            String url = userServiceUrl + "/api/users/" + userId + "/wallet?amount=" + amount;
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-User-Email", "admin@gmail.com");
+            headers.set("X-User-Roles", "ROLE_ADMIN");
+
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<Map> response = restTemplate.exchange(
-                    url,
+                    userServiceUrl + "/api/users/" + userId + "/wallet?amount=" + amount,
                     HttpMethod.PUT,
-                    null,
+                    entity,
                     Map.class
             );
 

@@ -82,7 +82,7 @@ public class DataSeeder implements CommandLineRunner {
                         break;
 
                     case REFUND:
-                        tx.setSenderId(null);
+                        tx.setSenderId(4L);
                         tx.setSenderName("Hệ thống Quản Trị");
                         if (random.nextBoolean()) {
                             tx.setReceiverId(1L);

@@ -4,6 +4,7 @@ import com.sba301.bookingservice.dto.TransactionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,11 @@ public class PaymentServiceClient {
 
     public void payToAdmin(TransactionRequest request) {
         try {
-            // 1. Tạo request entity kèm body
-            HttpEntity<TransactionRequest> entity = new HttpEntity<>(request);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-User-Email", "email");
+            headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
+            HttpEntity<TransactionRequest> entity = new HttpEntity<>(request, headers);
             // 2. Gọi POST sang Payment Service
             ResponseEntity<Map> response = restTemplate.exchange(
                     paymentServiceUrl + "/api/payments/pay",
