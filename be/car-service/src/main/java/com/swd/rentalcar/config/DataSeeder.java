@@ -236,7 +236,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // Add Thumbnail image
             addImage(cars.get(0),  "/images/cars/toyota-camry.jpg",      true);
-            addImage(cars.get(1),  "/images/cars/toyota-camry.jpg",      true);
+            addImage(cars.get(1),  "/images/cars/toyota-camry3.jpg",      true);
             addImage(cars.get(2),  "/images/cars/toyota-corolla.jpg",    true);
             addImage(cars.get(3),  "/images/cars/toyota-rav4.jpg",       true);
             addImage(cars.get(4),  "/images/cars/toyota-rav4.jpg",       true);
@@ -268,6 +268,29 @@ public class DataSeeder implements CommandLineRunner {
             addImage(cars.get(30), "/images/cars/vinfast-vf6.jpg",       true);
             addImage(cars.get(31), "/images/cars/vinfast-vf8.jpg",       true);
 
+            //add secondary images for some cars
+            addImage(cars.get(0),  "/images/cars/toyota-camry-alt2.jpg", false);
+            addImage(cars.get(0),  "/images/cars/toyota-camry-interior.jpg", false);
+            addImage(cars.get(1), "/images/cars/toyota-camry-interior.jpg", false);
+            addImage(cars.get(2), "/images/cars/toyota-corolla-interior.jpg", false);
+            addImage(cars.get(3), "/images/cars/toyota-rav4-interior.jpg", false);
+            addImage(cars.get(4), "/images/cars/toyota-rav4-interior.jpg", false);
+            addImage(cars.get(5), "/images/cars/toyota-fortuner-interior.jpg", false);
+            addImage(cars.get(6), "/images/cars/toyota-fortuner-interior.jpg", false);
+            addImage(cars.get(7), "/images/cars/toyota-innova-interior.jpg", false);
+            addImage(cars.get(8), "/images/cars/toyota-vios-interior.jpg", false);
+            addImage(cars.get(9), "/images/cars/toyota-vios-interior.jpg", false);
+            addImage(cars.get(10), "/images/cars/honda-civic-interior.jpg", false);
+            addImage(cars.get(11), "/images/cars/honda-crv-interior.jpg", false);
+            addImage(cars.get(12), "/images/cars/honda-crv-interior.jpg", false);
+            addImage(cars.get(13), "/images/cars/honda-city-interior.jpg", false);
+            addImage(cars.get(14), "/images/cars/honda-city-interior.jpg", false);
+            addImage(cars.get(15), "/images/cars/honda-hrv-interior.jpg", false);
+            addImage(cars.get(16), "/images/cars/ford-f150-interior.jpg", false);
+            addImage(cars.get(17), "/images/cars/ford-ranger-interior.jpg", false);
+            addImage(cars.get(18), "/images/cars/ford-ranger-interior.jpg", false);
+
+
             carRepository.saveAll(cars);
             log.info("✅ Seeded {} cars", cars.size());
         } catch (Exception e) {
@@ -291,11 +314,11 @@ public class DataSeeder implements CommandLineRunner {
                 buildCar("30E-99005", "880000",  "5800000", CarStatus.STOPPED, sorento,  ownerId)
         );
 
-        addImage(pendingCars.get(0), "/images/cars/ford-ranger.jpg",      true);
-        addImage(pendingCars.get(1), "/images/cars/ford-ranger.jpg",      true);
-        addImage(pendingCars.get(2), "/images/cars/tesla-model-y.jpg",    true);
-        addImage(pendingCars.get(3), "/images/cars/hyundai-tucson.jpg",   true);
-        addImage(pendingCars.get(4), "/images/cars/kia-seltos.jpg",       true);
+        addImage(pendingCars.get(0), "/images/cars/ford-explorer1.jpg",      true);
+        addImage(pendingCars.get(1), "/images/cars/ford-everest1.jpg",      true);
+        addImage(pendingCars.get(2), "/images/cars/tesla-model-x1.jpg",    true);
+        addImage(pendingCars.get(3), "/images/cars/hyundai-santa-fe1.jpg",   true);
+        addImage(pendingCars.get(4), "/images/cars/kia-sorento1.jpg",       true);
 
         carRepository.saveAll(pendingCars);
         log.info("✅ Seeded {} pending review cars", pendingCars.size());

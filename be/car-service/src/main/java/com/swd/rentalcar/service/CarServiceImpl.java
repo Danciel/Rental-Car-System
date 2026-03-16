@@ -346,6 +346,7 @@ public class CarServiceImpl implements CarService{
         // Reuse existing updateCarStatus logic
         CarStatus newStatus = switch (decision) {
             case APPROVED -> CarStatus.AVAILABLE;   // ← approved: publish listing
+
             case REJECTED -> CarStatus.BANNED;      // ← rejected: block the car
             default -> throw new IllegalArgumentException("Quyết định không hợp lệ: " + decision);
         };
