@@ -14,7 +14,8 @@ import {
 
 export function AdminSidebar({ currentPage, onNavigate, onBackToSite }) {
   const menuItems = [
-    { id: 'reports', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'users', label: 'User List', icon: Users },
     { id: 'cars', label: 'Car List', icon: Car },
     { id: 'roles', label: 'Role Management', icon: ShieldCheck },

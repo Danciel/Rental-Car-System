@@ -13,11 +13,12 @@ import { FeedbackPage } from './feedback-page'
 
 
 export function Admin({ onBackToSite }) {
-  const [currentPage, setCurrentPage] = useState('reports');
+  const [currentPage, setCurrentPage] = useState('dashboard');
 
   const getBreadcrumbs = () => {
     const breadcrumbMap = {
-      reports: ['Admin', 'Dashboard'],
+      dashboard: ['Admin', 'Dashboard'],
+      reports: ['Admin', 'Reports'],
       users: ['Admin', 'User List'],
       cars: ['Admin', 'Car List'],
       roles: ['Admin', 'Role Management'],
@@ -32,6 +33,8 @@ export function Admin({ onBackToSite }) {
 
   const renderPage = () => {
     switch (currentPage) {
+      case 'dashboard':
+        return <DashboardPage />;
       case 'users':
         return <UsersPage />;
       case 'cars':
