@@ -5,8 +5,34 @@ const getHeaders = (email?: string) => {
   const token = localStorage.getItem('ACCESS_TOKEN');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      // 1. Tách lấy phần payload của JWT
+      const base64Url = token.split('.')[1]; 
+      
+      // 2. Giải mã Base64 (Xử lý cả ký tự đặc biệt của JWT)
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        window.atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+
+      // 3. Parse JSON và lấy roles
+      const payload = JSON.parse(jsonPayload);
+      if (payload.roles) {
+        headers['X-User-Roles'] = payload.roles;
+      }
+    } catch (error) {
+      console.error("Không thể giải mã token:", error);
+    }
+  }
+
   if (email) headers['X-User-Email'] = email;
   return headers;
 };

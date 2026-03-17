@@ -90,6 +90,7 @@ public class UserServiceClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-User-Email", ownerEmail);
+            headers.set("X-User-Roles", "ROLE_CUSTOMER");
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
