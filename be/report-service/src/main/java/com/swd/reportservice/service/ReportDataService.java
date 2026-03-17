@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.ArrayList;
@@ -90,7 +89,7 @@ public class ReportDataService {
         LocalDate to = parseDate(filters == null ? null : filters.get("dateTo"));
 
         // Pull successful PAYMENT transactions, then filter by date window
-        Map<YearMonth, BigDecimal> revenueByMonth = new TreeMap<>();
+        Map<LocalDate, BigDecimal> revenueByDay = new TreeMap<>();
         BigDecimal total = BigDecimal.ZERO;
 
         int page = 0;
@@ -112,7 +111,7 @@ public class ReportDataService {
 
                 BigDecimal amount = parseBigDecimal(tx.get("amount"));
                 if (amount == null) amount = BigDecimal.ZERO;
-                revenueByMonth.merge(YearMonth.from(created), amount, BigDecimal::add);
+                revenueByDay.merge(created, amount, BigDecimal::add);
                 total = total.add(amount);
             }
 
@@ -125,9 +124,9 @@ public class ReportDataService {
             page++;
         }
 
-        List<String> columns = List.of("Month", "Revenue");
+        List<String> columns = List.of("Date", "Revenue");
         List<List<Object>> rows = new ArrayList<>();
-        for (Map.Entry<YearMonth, BigDecimal> e : revenueByMonth.entrySet()) {
+        for (Map.Entry<LocalDate, BigDecimal> e : revenueByDay.entrySet()) {
             rows.add(List.of(e.getKey().toString(), e.getValue()));
         }
         rows.add(List.of("TOTAL", total));
@@ -147,6 +146,7 @@ public class ReportDataService {
 
         // Aggregate by carId
         Map<Long, PopularAgg> agg = new HashMap<>();
+        BigDecimal totalRevenue = BigDecimal.ZERO;
         for (Map<String, Object> b : bookings) {
             LocalDate created = parseLocalDateTimeToDate(b.get("createdAt"));
             if (created == null) continue;
@@ -162,6 +162,7 @@ public class ReportDataService {
             PopularAgg a = agg.computeIfAbsent(carId, k -> new PopularAgg());
             a.count++;
             a.revenue = a.revenue.add(totalPrice);
+            totalRevenue = totalRevenue.add(totalPrice);
         }
 
         // Map carId -> car name by fetching car list once
@@ -193,6 +194,9 @@ public class ReportDataService {
             PopularAgg a = e.getValue();
             rows.add(List.of(carId, carNameById.getOrDefault(carId, "N/A"), a.count, a.revenue));
         }
+
+        // Summary row
+        rows.add(List.of("TOTAL", "", "", totalRevenue));
 
         return new ReportTable(columns, rows);
     }
