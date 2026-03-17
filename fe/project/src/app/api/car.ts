@@ -28,12 +28,14 @@ const getHeaders = (email?: string) => {
       if (payload.roles) {
         headers['X-User-Roles'] = payload.roles;
       }
+      if (payload.sub) {
+        headers['X-User-Email'] = payload.sub;
+      }
     } catch (error) {
       console.error("Không thể giải mã token:", error);
     }
   }
 
-  if (email) headers['X-User-Email'] = email;
   return headers;
 };
 
