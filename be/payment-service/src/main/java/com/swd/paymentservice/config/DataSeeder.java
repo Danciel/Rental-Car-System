@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,10 +30,14 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (transactionRepository.count() == 0) {
-            log.info("🌱 Khởi tạo 17 dữ liệu mẫu cho Payment Service (Random 4 ngày gần nhất)...");
+            log.info("🌱 Khởi tạo 30 dữ liệu mẫu cho Payment Service...");
 
             List<TransactionHistory> transactions = new ArrayList<>();
             Random random = new Random();
+
+            LocalDate startDate = LocalDate.of(2025, 12, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 15);
+            long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
 
             TransactionType[] allowedTypes = {
                     TransactionType.DEPOSIT,
@@ -47,26 +53,23 @@ public class DataSeeder implements CommandLineRunner {
                     "BKG-3d84339f-218b-4640-9906-87805a5431d0"
             };
 
-            for (int i = 1; i <= 17; i++) {
+            for (int i = 1; i <= 30; i++) {
                 TransactionHistory tx = new TransactionHistory();
 
                 // 1. Tạo thời gian ngẫu nhiên (4 ngày gần nhất, từ 8h - 22h, giờ chẵn)
-                int randomDaysAgo = random.nextInt(4)+1; // 0 đến 3 ngày trước
+                long randomDaysOffset = random.nextLong(daysBetween + 1);
                 int randomHour = random.nextInt(15) + 8; // 8 đến 22 (8h sáng - 10h tối)
 
-                LocalDateTime randomDateTime = LocalDateTime.now()
-                        .minusDays(randomDaysAgo)
-                        .withHour(randomHour)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0);
+                LocalDateTime randomDateTime = startDate.plusDays(randomDaysOffset)
+                        .atTime(randomHour, 0, 0);
 
                 tx.setCreatedAt(randomDateTime);
 
                 // 2. Cấu hình Status & Type
-                TransactionStatus status = (i <= 2) ? TransactionStatus.FAILED : TransactionStatus.SUCCESS;
+                TransactionStatus status = (random.nextInt(100) < 10) ? TransactionStatus.FAILED : TransactionStatus.SUCCESS;
+
                 TransactionType type = allowedTypes[random.nextInt(allowedTypes.length)];
-                BigDecimal amount = new BigDecimal((random.nextInt(10) + 1) * 500000);
+                BigDecimal amount = new BigDecimal((random.nextInt(50) + 1) * 50000);
                 String bookingRef = bookingCodes[random.nextInt(bookingCodes.length)];
 
                 // 3. Logic chi tiết theo từng Type
@@ -74,11 +77,17 @@ public class DataSeeder implements CommandLineRunner {
                     case DEPOSIT:
                         tx.setSenderId(null);
                         tx.setSenderName("Hệ thống Quản Trị");
-                        tx.setReceiverId(1L);
-                        tx.setReceiverName("Nguyễn Thành Nam");
-                        tx.setDescription("Nạp " + df.format(amount) + " đ vào tài khoản thành công");
+                        // Random giữa Thư (ID: 2) và Nam (ID: 1)
+                        if (random.nextBoolean()) {
+                            tx.setReceiverId(1L);
+                            tx.setReceiverName("Nguyễn Thành Nam");
+                        } else {
+                            tx.setReceiverId(2L);
+                            tx.setReceiverName("Trần Minh Thư");
+                        }
+                        tx.setDescription("Nạp " + df.format(amount) + " đ vào tài khoản");
                         tx.setTransactionCode("DEP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-                        tx.setPostBalanceReceiver(new BigDecimal("100000000.00"));
+                        tx.setPostBalanceReceiver(new BigDecimal("10000000.00"));
                         break;
 
                     case REFUND:
@@ -113,7 +122,7 @@ public class DataSeeder implements CommandLineRunner {
             }
 
             transactionRepository.saveAll(transactions);
-            log.info("✅ Hoàn tất khởi tạo 17 giao dịch mẫu với thời gian ngẫu nhiên!");
+            log.info("✅ Hoàn tất khởi tạo 30 giao dịch mẫu với thời gian ngẫu nhiên!");
         }
     }
 }
