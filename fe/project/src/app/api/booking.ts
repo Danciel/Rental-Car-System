@@ -2,22 +2,47 @@ const API_URL = "http://localhost:8080/api/bookings";
 
 // Hàm helper để tự động lấy token
 const getHeaders = () => {
-    const token = localStorage.getItem("ACCESS_TOKEN");
-    return {
+    const token = localStorage.getItem('ACCESS_TOKEN');
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+
+        try {
+          // 1. Tách lấy phần payload của JWT
+          const base64Url = token.split('.')[1];
+
+          // 2. Giải mã Base64 (Xử lý cả ký tự đặc biệt của JWT)
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            window.atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+
+          // 3. Parse JSON và lấy roles
+          const payload = JSON.parse(jsonPayload);
+          if (payload.roles) {
+            headers['X-User-Roles'] = payload.roles;
+          }
+          if (payload.sub) {
+            headers['X-User-Email'] = payload.sub;
+          }
+        } catch (error) {
+          console.error("Không thể giải mã token:", error);
+        }
+      }
+    return headers;
 };
 
 
 export const bookingAPI = {
     getManage: async (email: string) => {
-            const token = localStorage.getItem("ACCESS_TOKEN");
             const response = await fetch(`${API_URL}/manage`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Email': email
-                }
+                headers: getHeaders()
             });
             const text = await response.text();
             const data = text ? JSON.parse(text) : {};
