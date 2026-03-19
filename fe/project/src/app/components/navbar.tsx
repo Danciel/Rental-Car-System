@@ -1,6 +1,7 @@
 import { Car, Menu, X, LogOut, UserCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { userAPI } from '../api/user';
+import { set } from 'date-fns/set';
 
 interface NavbarProps {
   currentPage?: 'home' | 'search' | 'admin' | 'login' | 'list-car' | 'account';
@@ -16,6 +17,7 @@ interface UserProfile {
 export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Tự động kiểm tra Token và lấy Profile khi Navbar được render
   useEffect(() => {
@@ -26,11 +28,13 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
           const res = await userAPI.getMyProfile();
           // Backend trả về chuẩn ApiResponse.success(data) nên profile sẽ nằm trong res.data
           setUser(res.data);
+          setIsAdmin(localStorage.getItem("USER_EMAIL") === "admin@gmail.com");
         }
       } catch (error) {
         console.error("Failed to load profile:", error);
         localStorage.clear();
         setUser(null);
+        setIsAdmin(false);
       }
     };
     fetchProfile();
@@ -56,6 +60,7 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
   const handleLogout = () => {
     localStorage.clear();
     setUser(null);
+    setIsAdmin(false);
     handleNavigation('home');
     window.location.reload();
   };
@@ -99,12 +104,14 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
 
             {/* Right Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-3">
-              <button
-                  onClick={() => handleNavigation('admin')}
-                  className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors"
-              >
-                Admin
-              </button>
+              {isAdmin && (
+                <button
+                    onClick={() => handleNavigation('admin')}
+                    className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors"
+                >
+                  Admin
+                </button>
+              )}
 
               {/* ĐOẠN KIỂM TRA ĐĂNG NHẬP */}
               {user ? (
@@ -180,12 +187,14 @@ export function Navbar({ currentPage = 'home', onNavigate }: NavbarProps) {
                   </button>
 
                   <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
-                    <button
-                        onClick={() => handleNavigation('admin')}
-                        className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors text-left"
-                    >
-                      Admin
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => handleNavigation('admin')}
+                            className="px-4 py-2 text-gray-700 hover:text-[#1E40AF] transition-colors text-left"
+                        >
+                            Admin
+                        </button>
+                    )}
 
                     {/* ĐOẠN KIỂM TRA ĐĂNG NHẬP CHO MOBILE */}
                     {user ? (
